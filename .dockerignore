@@ -1,0 +1,48 @@
+# 版本控制与缓存
+.git
+.gitignore
+.gitattributes
+.github
+.trae
+.claude
+.vscode
+.idea
+.DS_Store
+
+# Python 缓存
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+
+# 虚拟环境
+.venv/
+venv/
+env/
+
+# 项目文档与测试（运行时不需要）
+docs/
+tests/
+githooks/
+*.md
+!README.md
+
+# ModelScope / 部署配置本身不需要进镜像（由平台注入）
+ms_deploy.json
+
+# 本地开发数据
+data/
+.cache/
+logs/
+*.log
+
+# Node 残留（未来若引入前端再调整）
+node_modules/
+
+# 临时文件
+*.tmp
+*.swp
