@@ -1,0 +1,32 @@
+{
+  "_comment": "世界时间线。记录小说世界中发生的大事件，按世界时间排序。由 state_update Skill 维护。",
+  "_comment_purpose": "作用：避免时间线穿帮（如某事件发生在某角色出生前），处理跨卷时间跨度。",
+  "_comment_era": "era 是世界纪元（如 '云隐历 1023 年'），world_date 是该纪元下的具体日期/时段",
+  "_comment_chapter_anchor": "chapter_anchor 是事件对应的章号，用于将世界时间与正文锚定",
+  "_comment_event_type": "event_type 枚举：character=角色相关 / faction=势力相关 / world=世界级 / foreshadow=伏笔事件",
+  "version": "1.0.0",
+  "era": "",
+  "current_world_date": "",
+  "events": [
+    {
+      "event_id": "W-001",
+      "world_date": "",
+      "chapter_anchor": 1,
+      "event_type": "character",
+      "description": "示例：主角觉醒金手指",
+      "related_characters": [
+        "protagonist"
+      ],
+      "impact": ""
+    },
+    {
+      "event_id": "W-002",
+      "world_date": "建安五年春",
+      "chapter_anchor": 42,
+      "event_type": "world",
+      "description": "主角抵达青云宗",
+      "related_characters": [],
+      "impact": ""
+    }
+  ]
+}

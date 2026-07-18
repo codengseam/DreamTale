@@ -1,0 +1,25 @@
+{
+  "_comment": "当前章节流水线状态。记录正在处理的章节在哪个 Skill 阶段。",
+  "_comment_purpose": "writer/polisher 等 Skill 启动前先读本文件确认当前阶段，避免重复执行或跳阶段。",
+  "_comment_mode": "mode 枚举：novel=长篇网文 / shortform=公众号短文",
+  "_comment_current_stage": "current_stage 枚举：idle=空闲 / architect=章纲生成 / hook_auditor=伏笔校验 / context_composer=上下文拼装 / writer=正文生成 / polisher=润色 / state_update=状态落地",
+  "_comment_stages": "stages 是完整流水线阶段顺序，state_update 完成后回到 idle 等待下一章",
+  "_comment_history": "history 记录最近 N 章的流水线执行轨迹，用于排查卡顿",
+  "current_chapter": 0,
+  "current_volume": 1,
+  "mode": "novel",
+  "current_stage": "idle",
+  "stages": [
+    "architect",
+    "hook_auditor",
+    "context_composer",
+    "writer",
+    "polisher",
+    "state_update"
+  ],
+  "history": [],
+  "last_recap_chapter": 0,
+  "last_drift_check_chapter": 0,
+  "archived_scenes": [],
+  "last_consistency_check_chapter": 0
+}

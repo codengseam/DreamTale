@@ -1,0 +1,7 @@
+title: MySQL实战45讲
+category: 技
+archetype: knowledge
+author: 编委会
+description: 面向 5 年左右互联网大厂测试开发工程师（SDET）的 MySQL 实战专栏。双目标：一、面试吊打面试官；二、项目实战调优落地，达到个人 AI 开发者与架构师水准。覆盖基础架构、日志系统、事务与 MVCC、索引深入、锁机制、SQL 优化、InnoDB 引擎、高可用架构、性能调优与实战九大模块。每篇按"概念/原理/实践/速查自测"四段式组织，引用林晓斌《MySQL 实战 45 讲》及《高性能 MySQL》《MySQL 技术内幕：InnoDB 存储引擎》等权威资料。
+cover: 🗄️
+sort: 110

@@ -1,0 +1,32 @@
+.env
+logs/
+
+__pycache__/
+*.pyc
+.pytest_cache/
+
+.vscode/
+.idea/
+
+.cache/
+data/
+
+# Node 依赖（测试时本地安装，不提交）
+node_modules/
+
+# 静态站点构建产物（由 CI 生成，不提交）
+site/data/
+site/notes/
+site/reader/
+site/.nojekyll
+
+.DS_Store
+*.log
+*.egg-info/
+dist/
+build/
+.mypy_cache/
+.ruff_cache/
+
+# 第三方方法论参考（本地克隆，不入仓库）
+vendor/

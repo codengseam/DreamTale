@@ -1,0 +1,12 @@
+# NovelForge — 极简 AI 小说创作系统 Python 依赖
+# 核心哲学：不使用数据库/向量库/LangChain/LangGraph，纯文件操作 + Trae Skills
+
+# 配置
+PyYAML>=6.0
+python-dotenv>=1.0.0
+
+# Token 计数（上下文编排师用）
+tiktoken>=0.7.0
+
+# 开发 / 测试
+pytest>=8.0

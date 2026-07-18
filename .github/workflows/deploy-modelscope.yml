@@ -1,0 +1,143 @@
+name: Deploy to ModelScope Studio
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+concurrency:
+  group: modelscope-deploy
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Build static site
+        run: python scripts/build_site.py --output output --site site
+
+      - name: Verify build output
+        run: |
+          set -e
+          # 校验关键文件存在
+          for f in index.html css/style.css js/app.js data/index.json; do
+            if [ ! -f "site/$f" ]; then
+              echo "::error::缺失构建产物 site/$f"
+              exit 1
+            fi
+          done
+          # 校验 notes 目录非空
+          if [ -z "$(ls -A site/notes 2>/dev/null)" ]; then
+            echo "::error::site/notes 目录为空"
+            exit 1
+          fi
+          # 校验 index.json 可解析
+          if ! python -c "import json; json.load(open('site/data/index.json'))" 2>/dev/null; then
+            echo "::error::site/data/index.json 不是有效的 JSON"
+            exit 1
+          fi
+          echo "✅ 构建产物校验通过"
+          echo "笔记数量: $(python -c "import json; print(json.load(open('site/data/index.json'))['stats']['notes'])")"
+
+      - name: Push to ModelScope Studio
+        env:
+          MS_TOKEN: ${{ secrets.MODELSCOPE_API_TOKEN }}
+          MS_REPO: ${{ vars.MODELSCOPE_STUDIO_REPO }}
+        run: |
+          set -e
+
+          # ---- 诊断：检查环境变量是否已配置 ----
+          if [ -z "$MS_TOKEN" ]; then
+            echo "::error::MODELSCOPE_API_TOKEN 未配置。请前往 GitHub Settings → Secrets → Actions 添加。"
+            exit 1
+          fi
+          echo "✅ MODELSCOPE_API_TOKEN 已配置"
+
+          if [ -z "$MS_REPO" ]; then
+            echo "::error::MODELSCOPE_STUDIO_REPO 未配置。请前往 GitHub Settings → Variables → Actions 添加。"
+            exit 1
+          fi
+          echo "✅ MODELSCOPE_STUDIO_REPO = $MS_REPO"
+
+          # ---- 同步到魔搭创空间（保留远端历史，用本地构建产物覆盖）----
+          # 策略：在临时目录 clone 远端 → 覆盖构建产物 → commit → push
+          # 这样既保留远端 commit 历史（含 README.md 卡片等），又确保构建产物最新
+
+          # 把构建产物暂存到临时目录（在 git 操作之前）
+          STAGING_DIR=$(mktemp -d)
+          cp -r site/. "$STAGING_DIR/"
+          echo "✅ 构建产物已暂存到 $STAGING_DIR"
+
+          # 在全新的临时目录操作 git，避免工作区文件冲突
+          WORK_DIR=$(mktemp -d)
+          cd "$WORK_DIR"
+
+          git init -b master
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # 用 token 配置认证
+          AUTH_REPO=$(echo "$MS_REPO" | sed "s|https://|https://oauth2:${MS_TOKEN}@|")
+          git remote add modelscope "$AUTH_REPO"
+
+          if git fetch modelscope master 2>&1; then
+            echo "✅ 已拉取远端 master 分支，基于远端历史部署"
+            # 工作区是空的，checkout 不会冲突
+            git checkout -b deploy modelscope/master
+            # 远端独有文件（如 README.md 卡片）现在在工作区
+          else
+            echo "ℹ️ 远端 master 分支不存在（首次部署）"
+            git checkout -b deploy
+          fi
+
+          # 用暂存的构建产物覆盖工作区（保留远端独有文件，覆盖同名文件）
+          cp -rf "$STAGING_DIR"/. .
+          rm -rf "$STAGING_DIR"
+
+          # 添加所有变更并提交
+          git add -A
+          git commit -m "deploy: sync from GitHub ${{ github.sha }}" --allow-empty || echo "无变更需要提交"
+
+          # 推送到魔搭 master 分支（fast-forward，保留远端历史）
+          if git push "$AUTH_REPO" deploy:master 2>&1; then
+            echo "✅ 已推送到 master 分支"
+          else
+            echo "::error::推送到魔搭仓库失败，请检查 Token 权限和仓库地址。"
+            exit 1
+          fi
+
+          # 清理工作目录
+          cd "$GITHUB_WORKSPACE"
+          rm -rf "$WORK_DIR"
+
+          echo "✅ Deployed to ModelScope Studio"
+
+      - name: Job Summary
+        if: always()
+        run: |
+          echo "## 🚀 魔搭 Studio 部署结果" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **目标**: ModelScope Studio" >> $GITHUB_STEP_SUMMARY
+          echo "- **仓库**: \`${{ vars.MODELSCOPE_STUDIO_REPO }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **访问地址**: https://www.modelscope.cn/studios/codengseam/haosz" >> $GITHUB_STEP_SUMMARY
+          echo "- **触发 commit**: \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **状态**: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ job.status }}" = "success" ]; then
+            echo "✅ 部署成功！魔搭空间内容已更新。" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ 部署失败，请查看上方日志排查。" >> $GITHUB_STEP_SUMMARY
+          fi

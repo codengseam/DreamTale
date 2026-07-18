@@ -1,0 +1,92 @@
+name: Remote Branch Cleanup
+
+# 触发：
+# - push to master → 自动 dry-run（只读审计报告）
+# - workflow_dispatch → 手动 execute（需 GitHub Environment 审批）
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'dry-run 报告 / execute 删除'
+        required: true
+        default: 'dry-run'
+        type: choice
+        options:
+          - dry-run
+          - execute
+      pattern:
+        description: '分支名 glob 模式'
+        required: false
+        default: 'trae/agent-*'
+
+# 并发控制：不取消正在执行的删除
+concurrency:
+  group: branch-cleanup
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  governance:
+    runs-on: ubuntu-latest
+    # execute 模式需要额外权限 + 审批环境
+    environment: ${{ inputs.mode == 'execute' && 'branch-cleanup-execute' || '' }}
+    permissions:
+      contents: ${{ inputs.mode == 'execute' && 'write' || 'read' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # 必需：patch-id 与 message 搜索需完整历史
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Fetch all remote refs
+        run: git fetch --prune origin "+refs/heads/*:refs/remotes/origin/*"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Determine mode
+        id: mode
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "mode=${{ inputs.mode }}" >> $GITHUB_OUTPUT
+            echo "pattern=${{ inputs.pattern }}" >> $GITHUB_OUTPUT
+          else
+            # push to master 永远只 dry-run
+            echo "mode=dry-run" >> $GITHUB_OUTPUT
+            echo "pattern=trae/agent-*" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Run branch governance
+        run: |
+          MODE="${{ steps.mode.outputs.mode }}"
+          PATTERN="${{ steps.mode.outputs.pattern }}"
+          ARGS="--mode $MODE --pattern \"$PATTERN\" --no-fetch --report-file branch-cleanup-report.txt"
+          if [ "$MODE" = "execute" ]; then
+            ARGS="$ARGS --yes"
+          fi
+          echo "执行: python scripts/branch_governance.py $ARGS"
+          eval "python scripts/branch_governance.py $ARGS"
+
+      - name: Upload report artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: branch-cleanup-report
+          path: branch-cleanup-report.txt
+          retention-days: 30
+
+      - name: Output report to job summary
+        if: always() && hashFiles('branch-cleanup-report.txt') != ''
+        run: |
+          echo "## 远端分支治理报告" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          cat branch-cleanup-report.txt >> $GITHUB_STEP_SUMMARY

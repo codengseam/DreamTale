@@ -1,0 +1,64 @@
+{
+  "_comment": "主角状态模板。所有动态字段由 state_update Skill 通过 save_state.py 维护，禁止手动 Edit。",
+  "_comment_basic": "basic 段为半静态信息，仅在角色档案变更时更新（如换名、新别名）",
+  "_comment_location": "location 段记录主角当前位置，recent_trajectory 保留最近 5 个位置",
+  "_comment_power_level": "power_level.realm 对应 core_rules.md 的境界表；realm_progress 0-100 表示当前境界进度；next_breakthrough 记录下一次突破的条件与预期章",
+  "_comment_inventory": "inventory 记录主角持有的关键物品（仅记剧情相关的，不记杂物）",
+  "_comment_emotion": "emotion.current 是当前情绪关键词；recent_arc 保留最近 5 个情绪节点；baseline 是主角默认情绪底色",
+  "_comment_relationships": "relationships 每条记录：对方角色ID、关系类型、当前态度值 -100~100、最近变化章",
+  "_comment_knowledge": "knowledge 区分已知/未知/误解，避免主角说出不该知道的信息",
+  "_comment_unresolved_personal_arcs": "主角未完成的个人支线（如复仇、寻亲），每条给目标与当前进度",
+  "_comment_goals": "goals.short_term 是本章/本卷目标；long_term 是全书目标；secret_goal 是主角自己都没意识到的目标",
+  "_comment_language_fingerprint": "语言指纹与 style_guide.md 附录 B 一致，polisher 按此校验台词",
+  "_comment_arc_stage": "arc_stage 对应 protagonist.md 的弧光阶段表",
+  "character_id": "protagonist",
+  "basic": {
+    "name": "",
+    "aliases": [],
+    "role": "protagonist",
+    "age": null,
+    "appearance_keywords": []
+  },
+  "location": {
+    "current": "",
+    "last_updated_ch": 0,
+    "recent_trajectory": []
+  },
+  "power_level": {
+    "realm": "",
+    "realm_progress": 0,
+    "abilities": [],
+    "limitations": [],
+    "next_breakthrough": {}
+  },
+  "inventory": [],
+  "emotion": {
+    "current": "",
+    "last_updated_ch": 0,
+    "recent_arc": [],
+    "baseline": ""
+  },
+  "relationships": [],
+  "knowledge": {
+    "known_facts": [],
+    "unknown_facts": [],
+    "misconceptions": []
+  },
+  "unresolved_personal_arcs": [],
+  "goals": {
+    "short_term": "",
+    "long_term": "",
+    "secret_goal": ""
+  },
+  "language_fingerprint": {
+    "avg_sentence_length": 12,
+    "preferred_words": [],
+    "catchphrases": [],
+    "forbidden_words": [],
+    "address_habits": {}
+  },
+  "arc_stage": "",
+  "last_appeared_ch": 0,
+  "first_appear_ch": 1,
+  "status": "active"
+}

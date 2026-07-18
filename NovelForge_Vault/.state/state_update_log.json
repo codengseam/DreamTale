@@ -1,0 +1,19 @@
+{
+  "_comment": "状态更新日志。记录每次 save_state.py 执行的 delta，用于审计与回滚。",
+  "_comment_purpose": "排查状态不一致时按本日志定位是哪次更新引入的问题；可按 log_id 回滚单次更新。",
+  "_comment_log_entry": "logs 数组每条含：log_id=自增ID / timestamp=ISO时间 / chapter=涉及章号 / target_file=被更新的JSON / delta_summary=变更摘要 / trigger_skill=触发更新的Skill",
+  "version": "1.0.0",
+  "logs": [
+    {
+      "log_id": 1,
+      "timestamp": "2026-07-07T09:49:12",
+      "chapter": "ch_042",
+      "ops_count": 3,
+      "files_changed": [
+        ".state/characters/protagonist.json",
+        ".state/world_timeline.json"
+      ],
+      "summary": "埋设伏笔 H-017；世界事件: 主角抵达青云宗"
+    }
+  ]
+}

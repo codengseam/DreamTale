@@ -1,0 +1,69 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'output/**'
+      - 'site/**'
+      - 'src/web/static-site/**'
+      - 'demos/**'
+      - 'scripts/build_site.py'
+      - '.github/workflows/pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Check book structure (strict)
+        run: python scripts/check_book_structure.py --output output --strict
+
+      - name: Check duplicate notes
+        run: python scripts/check_duplicates.py
+
+      - name: Build site
+        run: python scripts/build_site.py --output output --site site
+
+      - name: Verify build output
+        run: |
+          if [ ! -f site/data/index.json ] || ! python -c "import json,sys; json.load(open('site/data/index.json'))" 2>/dev/null; then
+            echo "::error::site/data/index.json 不存在或无效，构建失败"
+            exit 1
+          fi
+          echo "site/data/index.json 存在且有效"
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          name: github-pages
+          path: site
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

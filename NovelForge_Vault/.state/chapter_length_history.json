@@ -1,0 +1,7 @@
+{
+  "_comment": "章节字数历史。记录每章实际成稿字数，用于均值计算与节奏控制。",
+  "_comment_purpose": "architect 写新章纲时参考最近 N 章均值设定字数目标；polisher 校验成稿字数是否在 ±10% 区间。",
+  "_comment_chapters_entry": "chapters 数组每条含：ch=章号 / vol=卷号 / word_count=字数 / target=目标字数 / mode=novel|shortform",
+  "version": "1.0.0",
+  "chapters": []
+}

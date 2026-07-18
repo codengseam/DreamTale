@@ -1,0 +1,18 @@
+{
+  "_comment": "上下文预算配置。定义不同章节类型在调用 LLM 时可使用的上下文窗口大小（token 数）。",
+  "_comment_purpose": "context_composer Skill 按本配置拼装提示词，避免超窗或浪费。",
+  "_comment_default_budget": "default_budget 是常规章节默认 token 预算",
+  "_comment_by_chapter_type": "by_chapter_type 按章节类型覆盖默认值：regular=常规 / hook_resolve=伏笔回收章 / vol_start=卷首 / climax=高潮 / transition=过渡",
+  "_comment_l0_injection": "l0_injection=true 表示始终注入 author_intent.md 的 L0 摘要",
+  "_comment_l1_scene_recall": "l1_scene_recall=on_demand 表示按需召回 _scenes/，由 current_focus.md 的 retrieve_scenes 字段决定",
+  "default_budget": 8000,
+  "by_chapter_type": {
+    "regular": 8000,
+    "hook_resolve": 10000,
+    "vol_start": 12000,
+    "climax": 12000,
+    "transition": 6000
+  },
+  "l0_injection": true,
+  "l1_scene_recall": "on_demand"
+}

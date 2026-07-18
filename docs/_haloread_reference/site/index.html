@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>豪书斋 · 读古人书，悟今世事</title>
+    <link rel="stylesheet" href="css/style.css?v=2026070602">
+    <script src="https://cdn.jsdelivr.net/npm/marked@12.0.0/marked.min.js" defer></script>
+    <script>
+        // BUG-046：marked.js CDN 在部分网络/魔搭 iframe/微信内置浏览器下可达性不一致，
+        // 加载失败时回退到本地 vendor 副本，保证三端都能进入阅读器渲染流程。
+        (function () {
+            window.addEventListener('error', function (event) {
+                var src = event.target && event.target.src;
+                if (src && src.indexOf('marked.min.js') !== -1) {
+                    var s = document.createElement('script');
+                    s.src = 'js/vendor/marked.min.js?v=2026070602';
+                    s.async = false;
+                    document.head.appendChild(s);
+                }
+            }, true);
+        })();
+    </script>
+    <script src="js/app.js?v=2026070602" defer></script>
+    <script>
+        // 强制清理旧版本 Service Worker，避免缓存幽灵旧版
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(function (registrations) {
+                registrations.forEach(function (reg) {
+                    reg.unregister().then(function () {
+                        console.log('[豪书斋] 已注销旧 Service Worker:', reg.scope);
+                    });
+                });
+            }).then(function () {
+                if (navigator.serviceWorker.controller) {
+                    // 旧 SW 还在控制页面，需要刷新一次才能真正生效
+                    window.location.reload();
+                }
+            });
+        }
+    </script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function () {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(function (registration) {
+                        console.log('[豪书斋] Service Worker 注册成功:', registration.scope);
+                    })
+                    .catch(function (error) {
+                        console.warn('[豪书斋] Service Worker 注册失败:', error);
+                    });
+            });
+        }
+    </script>
+</head>
+<body data-theme="day" data-skin="classical" data-font="serif" data-view="home">
+    <header class="brand-header">
+        <div class="brand-lockup" id="brandLockup">
+            <div class="brand-badge" aria-label="豪">豪</div>
+            <div class="brand-text">
+                <span class="brand-name">豪书斋</span>
+                <span class="brand-motto">读古人书，悟今世事</span>
+            </div>
+        </div>
+        <nav class="brand-actions" aria-label="主导航">
+            <a class="nav-link" href="#bookshelf">书架</a>
+            <a class="nav-link nav-saints" href="./demos/saints_hall.html" target="_blank" rel="noopener">圣贤堂</a>
+            <a class="nav-link" href="#" id="newNoteLink">生成新笔记</a>
+            <button class="btn-primary" id="newNoteBtn" type="button">开始阅读</button>
+        </nav>
+    </header>
+
+    <!-- 阅读器工具栏（首页隐藏） -->
+    <header class="toolbar" id="toolbar" hidden>
+        <button id="menuBtn" class="icon-btn menu-btn" type="button" aria-label="目录">☰</button>
+        <div class="toolbar-brand">
+            <h1>豪书斋</h1>
+            <span class="toolbar-chapter" id="toolbarChapter"></span>
+        </div>
+        <div class="toolbar-search">
+            <input type="text" id="searchInput" placeholder="搜索书名、章节或事件…" autocomplete="off">
+        </div>
+        <div class="toolbar-actions">
+            <button id="refreshBtn" class="btn-secondary" type="button">刷新目录</button>
+            <button id="settingsBtn" class="icon-btn" type="button" aria-label="阅读设置">⚙</button>
+            <button id="immersiveBtn" class="immersive-btn" type="button" aria-label="沉浸阅读" hidden>⛶ 沉浸</button>
+            <button id="newNoteBtnToolbar" class="btn-primary" type="button">生成新笔记</button>
+        </div>
+    </header>
+
+    <main class="page-main">
+        <section class="home-view" id="homeView">
+            <section class="hero">
+                <div class="hero-inner">
+                    <h1 class="hero-title">深读一部经典，看见千年人心</h1>
+                    <p class="hero-subtitle">从《资治通鉴》到历代典籍，用现代视角重讲古人故事。</p>
+                    <div class="hero-stats" id="heroStats">
+                        <span>正在统计书目…</span>
+                    </div>
+                </div>
+            </section>
+
+            <section class="bookshelf-section" id="bookshelf">
+                <div class="bookshelf-header">
+                    <h2 class="bookshelf-title">书架</h2>
+                    <div class="bookshelf-controls">
+                        <div class="category-tabs" id="categoryTabs" role="tablist" aria-label="分类筛选">
+                            <button class="category-tab active" data-category="all" role="tab" aria-selected="true" type="button">全部</button>
+                        </div>
+                        <div class="bookshelf-search">
+                            <input type="text" id="bookshelfSearchInput" placeholder="搜索书名、作者、分类…" autocomplete="off">
+                        </div>
+                    </div>
+                </div>
+                <div class="bookshelf-grid" id="bookshelfGrid">
+                    <div class="empty-state">正在加载书架…</div>
+                </div>
+            </section>
+        </section>
+
+        <!-- 阅读视图 -->
+        <section class="reader-view" id="readerView" hidden>
+            <aside class="sidebar">
+                <div class="sidebar-header">
+                    <button id="backBtn" class="back-btn" type="button">
+                        <span class="back-arrow" aria-hidden="true">←</span>
+                        <span>返回书架</span>
+                    </button>
+                    <h2 id="currentBookTitle" class="sidebar-book-title">笔记目录</h2>
+                </div>
+                <nav id="treeNav" class="tree-nav">
+                    <div class="empty-state">正在加载目录…</div>
+                </nav>
+            </aside>
+            <div class="reader" id="reader">
+                <div class="reader-wallpaper" aria-hidden="true"></div>
+                <div class="reader-placeholder">
+                    <p>请在左侧选择一篇笔记开始阅读。</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    <div class="bottom-bar" id="bottomBar">
+        <button type="button" id="prevBtnBottom" disabled>上一章</button>
+        <button type="button" id="tocBtnBottom">目录</button>
+        <button type="button" id="settingsBtnBottom">设置</button>
+        <button type="button" id="nextBtnBottom" disabled>下一章</button>
+    </div>
+
+    <div class="settings-overlay" id="settingsOverlay"></div>
+    <aside class="settings-panel" id="settingsPanel" aria-hidden="true">
+        <div class="settings-header">
+            <h2>阅读设置</h2>
+            <button id="settingsClose" class="modal-close" type="button" aria-label="关闭">&times;</button>
+        </div>
+        <div class="settings-body">
+            <div class="settings-group">
+                <label class="settings-label">皮肤</label>
+                <div class="settings-btns" id="skinBtns">
+                    <button type="button" data-skin="classical">古典书斋</button>
+                    <button type="button" data-skin="modern">现代简约</button>
+                </div>
+            </div>
+            <div class="settings-group">
+                <label class="settings-label">字体</label>
+                <div class="settings-btns" id="fontBtns">
+                    <button type="button" data-font="serif">宋体</button>
+                    <button type="button" data-font="sans">黑体</button>
+                    <button type="button" data-font="kai">楷体</button>
+                </div>
+            </div>
+            <div class="settings-group">
+                <label class="settings-label">字号 <span id="fontSizeVal">18px</span></label>
+                <input type="range" id="fontSizeRange" min="14" max="28" step="1" value="18">
+            </div>
+            <div class="settings-group">
+                <label class="settings-label">行高 <span id="lineHeightVal">1.9</span></label>
+                <input type="range" id="lineHeightRange" min="1.4" max="2.5" step="0.1" value="1.9">
+            </div>
+            <div class="settings-group">
+                <label class="settings-label">行距 <span id="paragraphSpacingVal">1.0em</span></label>
+                <input type="range" id="paragraphSpacingRange" min="0.5" max="2.5" step="0.1" value="1.0">
+            </div>
+            <div class="settings-group">
+                <label class="settings-label">主题</label>
+                <div class="settings-btns" id="themeBtns">
+                    <button type="button" data-theme="day">白天</button>
+                    <button type="button" data-theme="sepia">护眼</button>
+                    <button type="button" data-theme="night">夜间</button>
+                </div>
+            </div>
+            <div class="settings-group">
+                <label class="settings-label">阅读壁纸</label>
+                <div class="settings-btns settings-wallpaper-btns" id="wallpaperBtns">
+                    <button type="button" data-wallpaper="none">无</button>
+                    <button type="button" data-wallpaper="bamboo">竹简</button>
+                    <button type="button" data-wallpaper="landscape">山水</button>
+                </div>
+            </div>
+            <div class="settings-group">
+                <label class="settings-label">壁纸透明度 <span id="wallpaperOpacityVal">0.6</span></label>
+                <input type="range" id="wallpaperOpacityRange" min="0.2" max="1.0" step="0.1" value="0.6">
+            </div>
+            <div class="settings-group">
+                <label class="settings-label">翻页模式</label>
+                <div class="settings-btns" id="pageModeBtns">
+                    <button type="button" data-page-mode="tap">滑动+点击</button>
+                    <button type="button" data-page-mode="scroll">原生滚动</button>
+                </div>
+            </div>
+            <div class="settings-group">
+                <label class="settings-label">自动阅读</label>
+                <div class="settings-btns" id="autoScrollBtns">
+                    <button type="button" data-auto-scroll="false">关闭</button>
+                    <button type="button" data-auto-scroll="true">开启</button>
+                </div>
+            </div>
+            <div class="settings-group">
+                <label class="settings-label">自动阅读速度 <span id="autoScrollSpeedVal">50</span> 行/分</label>
+                <input type="range" id="autoScrollSpeedRange" min="24" max="100" step="1" value="50">
+            </div>
+            <div class="settings-group">
+                <button type="button" id="offlineExportBtn" class="btn-secondary settings-export-btn">离线导出笔记</button>
+            </div>
+            <button type="button" id="resetSettingsBtn" class="btn-secondary settings-reset">恢复默认</button>
+        </div>
+    </aside>
+
+    <div id="exportOverlay" class="modal-overlay" aria-hidden="true">
+        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="exportTitle">
+            <div class="modal-header">
+                <h2 id="exportTitle">离线导出</h2>
+                <button id="exportClose" class="modal-close" type="button" aria-label="关闭">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="exportBookTip" class="export-book-tip"></div>
+                <div class="export-format-row" role="radiogroup" aria-label="导出格式">
+                    <label class="export-format-option"><input type="radio" name="exportFormat" value="md" checked> Markdown</label>
+                    <label class="export-format-option"><input type="radio" name="exportFormat" value="txt"> 纯文本</label>
+                    <label class="export-format-option"><input type="radio" name="exportFormat" value="epub"> EPUB</label>
+                </div>
+                <div id="exportTree" class="export-tree"></div>
+                <div class="export-actions">
+                    <button type="button" id="exportSelectAllBtn" class="btn-secondary">全选</button>
+                    <button type="button" id="exportClearBtn" class="btn-secondary">清空</button>
+                    <span id="exportCounter">已选 0 篇</span>
+                    <button type="button" id="exportConfirmBtn" class="btn-primary" disabled>确认导出</button>
+                    <button type="button" id="exportCancelBtn" class="btn-secondary">取消</button>
+                </div>
+                <div id="exportProgress" hidden>
+                    <div class="export-progress-bar"><div id="exportProgressFill"></div></div>
+                    <span id="exportProgressText">准备中…</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="modalOverlay" class="modal-overlay" aria-hidden="true">
+        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+            <div class="modal-header">
+                <h2 id="modalTitle">提示</h2>
+                <button id="modalClose" class="modal-close" type="button" aria-label="关闭">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>静态站点不支持在线生成。请在本地运行以下命令生成笔记后，重新构建站点：</p>
+                <pre><code>python src/main.py --book 书名 --chapter 章节 --event 事件</code></pre>
+                <p>生成完成后，重新运行构建脚本：</p>
+                <pre><code>python scripts/build_site.py</code></pre>
+                <div class="modal-actions">
+                    <button type="button" id="cancelBtn" class="btn-primary">知道了</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,89 @@
+# 个人 AI 深度阅读助手配置
+
+output:
+  filename_pattern: "{chapter}_{event}.md"
+
+# 生成笔记的输出目录（供工具层与 workflow 读取）
+output_dir: "output"
+
+# Obsidian Vault 目录；留空则使用环境变量 OBSIDIAN_VAULT_PATH
+vault_dir: ""
+
+# 缓存目录（搜索来源、中间结果等）
+cache_dir: ".cache"
+
+logs:
+  base_dir: logs
+
+llm:
+  # 默认温度，叙事类 Agent 可稍高，分析类可稍低
+  default_temperature: 0.7
+
+# 默认使用的大模型名称
+model: "qwen-plus"
+
+# 可信搜索域白名单：Agent 搜索时优先使用这些来源
+trusted_domains:
+  - "zh.wikipedia.org"          # 中文维基百科
+  - "baike.baidu.com"           # 百度百科
+  - "ctext.org"                 # 中国哲学书电子化计划
+  - "guoxue123.com"             # 国学网
+  - "zhihu.com"                 # 知乎（专栏/回答需人工校验）
+  - "xuewen.cnki.net"           # CNKI 学问
+  - "zggds.org"                 # 中国古代史
+  - "sinica.edu.tw"             # 中央研究院
+  - "himalaya.socanth.cam.ac.uk" # 剑桥喜马拉雅数字图书馆（可选）
+
+# Agent 输出结构检查开关
+quality_check:
+  enabled: true
+  required_sections:
+    - 讲事情
+    - 讲人物
+    - 讲背景
+    - 讲道理
+    - 问道悟道
+    - 结语
+
+# 结构模板分桶（archetype 分桶阶段3，design.md §10）
+# get_required_sections(archetype) 优先读此表，fallback 到 quality_check.required_sections
+# narrative 桶段名必须与 quality_check.required_sections 完全一致（古籍零回归护栏）
+section_templates:
+  narrative:
+    - 讲事情
+    - 讲人物
+    - 讲背景
+    - 讲道理
+    - 问道悟道
+    - 结语
+  modern:
+    - 入戏
+    - 破题
+    - 方法论
+    - 避坑
+    - 践行
+  knowledge:
+    - 概念
+    - 原理
+    - 实践
+    - 速查/自测
+
+# MCP 服务器名称映射
+mcp_servers:
+  pdf_reader: "mcp_pdf-reader-mcp"  # 读取本地 PDF 史料
+  obsidian: "mcp_mcp-obsidian"      # 读写 Obsidian Vault
+
+# 可选：Google Custom Search 配置
+google_search_api_key: ""
+google_search_engine_id: ""
+
+# archetype 分桶默认映射：category -> archetype
+# resolve_archetype(category, explicit=...) 查此表；explicit 优先，未知 category 兜底 narrative
+# 详见 docs/archetype-design/design.md §5.4
+archetype_defaults:
+  史: "narrative"
+  经: "narrative"
+  养生: "modern"
+  财: "modern"
+  职场: "modern"
+  技: "knowledge"

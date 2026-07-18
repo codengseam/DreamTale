@@ -1,0 +1,33 @@
+{
+  "_comment": "NovelForge 伏笔追踪表。每条伏笔记录埋设/提示/回收的全生命周期。由 hook_auditor Skill 维护，禁止手动编辑。",
+  "_comment_scope": "scope 枚举：short=卷内回收 / long=跨卷回收 / core=全书级",
+  "_comment_status": "status 枚举：planted=已埋设 → hinted=已提示 → resolved=已回收 / abandoned=已放弃",
+  "_comment_strength": "strength 枚举：strong=强伏笔（必回收）/ medium=中等 / weak=弱伏笔（可放弃，但需登记）",
+  "_comment_payoff_type": "payoff_type 枚举：reveal=揭示 / twist=反转 / powerup=能力解锁 / emotional=情感冲击 / callback=回扣前文",
+  "_comment_emotional_valence": "emotional_valence 枚举：positive=正向爽感 / negative=负面冲击 / bittersweet=苦甜交织",
+  "_comment_priority": "priority 枚举：high=高优先级（必回收且不能延期）/ medium / low",
+  "_comment_reminder": "reminder_chapters 记录所有提示过的章号；next_reminder_due_ch 由 hook_auditor 计算下次该提示的章号",
+  "_comment_dependencies": "dependencies 记录依赖的其他 hook_id，必须先回收依赖才能回收本条",
+  "version": "1.0.0",
+  "hooks": [
+    {
+      "hook_id": "H-001",
+      "description": "示例伏笔：主角眉心的红痣在觉醒金手指时隐隐发烫，暗示其与某位上古大能的关联",
+      "planted_ch": 1,
+      "scope": "core",
+      "status": "planted",
+      "target_resolve_ch": 10,
+      "expected_resolve_vol": 1,
+      "related_characters": ["主角"],
+      "priority": "high",
+      "strength": "strong",
+      "payoff_type": "reveal",
+      "emotional_valence": "positive",
+      "reminder_chapters": [],
+      "last_reminder_ch": null,
+      "next_reminder_due_ch": 8,
+      "dependencies": [],
+      "resolution_note": ""
+    }
+  ]
+}

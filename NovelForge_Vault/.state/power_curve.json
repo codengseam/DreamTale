@@ -1,0 +1,11 @@
+{
+  "_comment": "金手指强度曲线。追踪主角金手指在每章的强度等级，防止战力崩坏。",
+  "_comment_purpose": "state_update 每章追加一条记录；alert_rules 触发告警时 hook_auditor 介入。",
+  "_comment_chapters_entry": "chapters 数组每条含：ch=章号 / level=金手指强度1-10 / bottleneck=是否有瓶颈 / note=备注",
+  "_comment_alert_rules": "alert_rules.consecutive_no_bottleneck=连续N章无瓶颈则告警（金手指可能失控）；single_chapter_jump=单章强度跳变超过N级则告警",
+  "chapters": [],
+  "alert_rules": {
+    "consecutive_no_bottleneck": 3,
+    "single_chapter_jump": 1
+  }
+}

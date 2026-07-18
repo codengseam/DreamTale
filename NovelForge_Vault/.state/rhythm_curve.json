@@ -1,0 +1,11 @@
+{
+  "_comment": "节奏曲线。追踪每章爽点等级与压抑等级，防止节奏失衡。",
+  "_comment_purpose": "state_update 每章追加一条；alert_rules 触发告警时 architect 介入调整下章章纲。",
+  "_comment_chapters_entry": "chapters 数组每条含：ch=章号 / satisfaction=爽点等级1-5 / suppression=压抑等级1-5 / note=备注",
+  "_comment_alert_rules": "alert_rules.consecutive_low_satisfaction=连续N章爽点≤2则告警（读者要弃书）；consecutive_high_suppression=连续N章压抑≥4则告警（读者要抑郁）",
+  "chapters": [],
+  "alert_rules": {
+    "consecutive_low_satisfaction": 3,
+    "consecutive_high_suppression": 3
+  }
+}

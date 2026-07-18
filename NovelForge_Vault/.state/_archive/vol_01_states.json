@@ -1,0 +1,15 @@
+{
+  "_comment": "卷一末状态快照（示例空结构）。卷一完结时由主 Agent 用 Edit/Write 手动归档，冻结该时刻所有角色与曲线状态。",
+  "_comment_purpose": "回溯历史时可用：如卷三发现某角色行为与卷一不符，可调本快照对比卷一末状态。",
+  "_comment_frozen_at": "frozen_at 记录快照冻结时的章号与时间",
+  "volume": 1,
+  "frozen_at": {
+    "chapter": null,
+    "timestamp": ""
+  },
+  "characters": {},
+  "power_curve": [],
+  "rhythm_curve": [],
+  "world_timeline_events": [],
+  "hooks_status": []
+}
