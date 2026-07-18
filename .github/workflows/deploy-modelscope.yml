@@ -1,0 +1,132 @@
+name: Deploy to ModelScope Studio
+
+# 触发条件：push 到 master 分支，或手动触发
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+# 同一时刻只允许一个部署任务（取消旧的、保留新的）
+concurrency:
+  group: modelscope-deploy
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout GitHub repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      # ──────────────────────────────────────────────────────────────
+      # 部署约定（写死在 workflow 里，防止遗忘）：
+      #
+      # - GitHub 仓库：codengseam/DreamTale（主仓库，唯一发起点）
+      # - 魔搭创空间：codengseam/DreamTale（镜像目标）
+      # - 魔搭默认部署分支：master
+      # - 魔搭 SDK 类型：docker（见 ms_deploy.json）
+      # - 服务端口：7860（ModelScope 强制要求）
+      #
+      # 同步策略（借鉴 ReUp 项目三级降级，避免循环 non-fast-forward）：
+      # 1) 普通 push：魔搭 master 是 GitHub master 祖先时直接 fast-forward 成功
+      # 2) force-with-lease：历史分叉时用 GitHub master 覆盖魔搭 master 对齐历史
+      #    （一次性解决循环分叉；若魔搭禁止 force 则失败，回退到 merge）
+      # 3) merge fallback：--allow-unrelated-histories -X ours + 带重试 push（保底）
+      #
+      # 历史背景：DreamTale 仓库在魔搭端最初有独立初始化历史（System init），
+      # 与 GitHub 历史不相关，因此首次同步必须走 force-with-lease 或 merge fallback。
+      # ──────────────────────────────────────────────────────────────
+      - name: Sync to ModelScope
+        env:
+          MODELSCOPE_TOKEN: ${{ secrets.MODELSCOPE_API_TOKEN }}
+        run: |
+          set -e
+
+          if [ -z "$MODELSCOPE_TOKEN" ]; then
+            echo "::error::MODELSCOPE_API_TOKEN 未配置。请前往 GitHub Settings → Secrets → Actions 添加。"
+            exit 1
+          fi
+          echo "✅ MODELSCOPE_API_TOKEN 已配置"
+
+          # 增大 HTTP 缓冲，避免大包传输被服务端提前关闭（curl 18 RPC 中断）
+          git config http.postBuffer 524288000
+
+          # 添加魔搭远端（带 token 认证）
+          git remote add modelscope https://oauth2:${MODELSCOPE_TOKEN}@www.modelscope.cn/studios/codengseam/DreamTale.git
+
+          # 带重试的 push 函数：魔搭 Git 服务器偶发 502 / RPC 断连
+          # 用法: push_with_retry <refspec...>
+          push_with_retry() {
+            local max=5 delay=10
+            for i in $(seq 1 $max); do
+              if git push modelscope "$@"; then
+                echo "✅ Push succeeded on attempt $i/$max"
+                return 0
+              fi
+              echo "⚠️ Push attempt $i/$max failed, retrying in ${delay}s..."
+              [ "$i" -lt "$max" ] && sleep "$delay"
+              delay=$((delay * 2))
+            done
+            echo "::error::All $max push attempts failed"
+            return 1
+          }
+
+          # 先 shallow fetch 魔搭 master（用于 force-with-lease 与 merge 判断）
+          # --depth=1 避免拉取整个魔搭历史（大文件 / 全历史会触发 curl 18 RPC 中断）
+          git fetch modelscope master --depth=1 || echo "ℹ️ 魔搭 master 不存在（首次部署）"
+
+          # 1) 普通 push：若魔搭 master 是 GitHub master 祖先则 fast-forward 成功（最干净）
+          if git push modelscope HEAD:master 2>/dev/null; then
+            echo "✅ Fast-forward push succeeded"
+
+          # 2) force-with-lease：历史分叉时用 GitHub master 覆盖魔搭 master 对齐历史
+          #    lease 基于刚 fetch 的 modelscope/master，若远程在此期间变化则拒绝（安全）
+          #    成功后以后均可 fast-forward，彻底解决循环分叉
+          elif git push modelscope --force-with-lease=modelscope/master HEAD:master 2>/dev/null; then
+            echo "✅ Force-with-lease push succeeded, histories aligned"
+
+          # 3) merge fallback：force 被禁或 lease 失效时保底
+          else
+            echo "ℹ️ Push rejected, merging with unrelated histories..."
+            # DreamTale 仓库在魔搭端有独立初始化历史，与 GitHub 历史不相关
+            # -X ours：冲突时保留 GitHub 版本（魔搭自动初始化的 README.md 等会被覆盖）
+            git merge --no-edit --allow-unrelated-histories -X ours modelscope/master
+            push_with_retry HEAD:master
+          fi
+
+          # 清理 remote（避免 token 残留在 .git/config）
+          git remote remove modelscope
+
+          echo "✅ Deployed to ModelScope Studio"
+
+      - name: Job Summary
+        if: always()
+        run: |
+          echo "## 🚀 魔搭 Studio 部署结果" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **GitHub 仓库**: codengseam/DreamTale" >> $GITHUB_STEP_SUMMARY
+          echo "- **魔搭创空间**: [codengseam/DreamTale](https://www.modelscope.cn/studios/codengseam/DreamTale)" >> $GITHUB_STEP_SUMMARY
+          echo "- **SDK 类型**: docker" >> $GITHUB_STEP_SUMMARY
+          echo "- **服务端口**: 7860" >> $GITHUB_STEP_SUMMARY
+          echo "- **触发 commit**: \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **状态**: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ job.status }}" = "success" ]; then
+            echo "✅ 部署成功！魔搭空间已同步 GitHub master。" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "⚠️ 注意：首次部署后需在魔搭创空间页面点「立即发布」按钮才会真正运行。" >> $GITHUB_STEP_SUMMARY
+            echo "后续代码更新只需 push 到 GitHub，Action 自动同步；魔搭会自动重新构建。" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ 部署失败，请查看上方日志排查。" >> $GITHUB_STEP_SUMMARY
+          fi
