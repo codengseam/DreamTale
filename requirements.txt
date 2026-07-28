@@ -1,1 +1,20 @@
-gradio>=4.0.0
+# DreamTale · Phase 1 依赖清单
+#
+# 设计原则：
+# - 本地优先：纯手工写作平台 MVP，无 AI 也能完整使用
+# - 轻量化：只装 Web 服务与数据库必需依赖，不引入重依赖
+# - AI/采集层在 Phase 2/4 扩展，届时再增量添加
+#
+# 不包含：gradio、matplotlib、numpy 等重依赖（Phase 1 不需要）
+
+# Web 框架（ASGI）
+fastapi>=0.110.0
+
+# ASGI 服务器（带 standard extras 用于自动重载与 uvloop）
+uvicorn[standard]>=0.27.0
+
+# 数据校验（FastAPI 底层依赖，显式锁定大版本）
+pydantic>=2.5.0
+
+# 表单解析（FastAPI 处理 multipart/form-data 必需，前端提交作品/章节时用）
+python-multipart>=0.0.6
