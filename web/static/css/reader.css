@@ -1,0 +1,849 @@
+/* ============================================================
+   DreamTale · 沉浸式阅读器样式（reader.css）
+   fork 自 HaloRead css/style.css 阅读器部分，简化为 DreamTale 章节阅读专用。
+
+   结构：基础变量 → 三主题语义变量 → 根容器 → 顶栏 → 字体面板
+        → 主体（侧边栏 + 阅读区）→ 目录树 → 章节正文排版
+        → 章节导航 → 阅读进度条 → 沉浸模式 → 响应式
+
+   主题切换：data-theme="dark|light|sepia"
+   ============================================================ */
+
+/* ============ 基础变量（与主题无关） ============ */
+.dreamtale-reader {
+  /* 系统字体栈，按平台优先命中自带宋体/楷体/无衬线 */
+  --dr-font-sans: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB",
+                  "Microsoft YaHei", "Noto Sans SC", sans-serif;
+  --dr-font-serif: "Songti SC", "STSong", "SimSun", "Source Han Serif SC",
+                   "Noto Serif SC", Georgia, serif;
+  --dr-font-kai: "STKaiti", "Kaiti SC", "KaiTi", "KaiTi_GB2312",
+                 "Source Han Serif SC", "Noto Serif SC", serif;
+  --dr-font-mono: "SF Mono", "JetBrains Mono", Menlo, Consolas,
+                  "Source Code Pro", monospace;
+
+  --dr-radius: 10px;
+  --dr-toolbar-h: 52px;
+  --dr-sidebar-w: 280px;
+  --dr-shadow: rgba(60, 40, 20, 0.10);
+
+  --dr-reader-font-size: 18px;
+  --dr-reader-line-height: 1.8;
+}
+
+/* ============ 三主题语义变量（亮色 / 护眼 / 暗色） ============ */
+/* 亮色（默认）：纯白底、墨黑文字、朱砂红强调 */
+.dreamtale-reader[data-theme="light"] {
+  --paper: #ffffff;
+  --bg: #ffffff;
+  --bg-card: #fafafa;
+  --bg-paper: #ffffff;
+  --bg-toolbar: #ffffff;
+  --bg-sidebar: #f7f7f8;
+  --bg-hover: #f0f0f2;
+  --bg-active: #e6e6ea;
+  --bg-modal: #fafafa;
+  --ink: #1f2024;
+  --ink-primary: #1f2024;
+  --ink-secondary: #545660;
+  --ink-muted: #9094a0;
+  --accent: #a33227;
+  --accent-hover: #83261c;
+  --accent-light: #c04338;
+  --accent-bg: rgba(163, 50, 39, 0.10);
+  --border: #e2e2e6;
+  --divider: #ededf0;
+  --shadow: rgba(0, 0, 0, 0.06);
+}
+
+/* 护眼（米黄）：深宣纸底、深茶褐文字、深朱砂 */
+.dreamtale-reader[data-theme="sepia"] {
+  --paper: #f5f0e6;
+  --bg: #efe5cf;
+  --bg-card: #faf4e6;
+  --bg-paper: #f5f0e6;
+  --bg-toolbar: #efe5cf;
+  --bg-sidebar: #ebe3cf;
+  --bg-hover: #e3d9bf;
+  --bg-active: #d9ccab;
+  --bg-modal: #faf4e6;
+  --ink: #3a3225;
+  --ink-primary: #3a3225;
+  --ink-secondary: #5e4f3a;
+  --ink-muted: #8a7558;
+  --accent: #a06030;
+  --accent-hover: #834e26;
+  --accent-light: #c07840;
+  --accent-bg: rgba(160, 96, 48, 0.12);
+  --border: #d4c7a8;
+  --divider: #e0d5b8;
+  --shadow: rgba(60, 40, 20, 0.10);
+}
+
+/* 暗色（夜读）：墨黑底、暖白文字、琥珀金强调 */
+.dreamtale-reader[data-theme="dark"] {
+  --paper: #0a0f1c;
+  --bg: #0d1424;
+  --bg-card: #11182a;
+  --bg-paper: #0a0f1c;
+  --bg-toolbar: #0d1424;
+  --bg-sidebar: #0a0f1c;
+  --bg-hover: #18223a;
+  --bg-active: #1f2d4a;
+  --bg-modal: #11182a;
+  --ink: #e3e8f5;
+  --ink-primary: #e3e8f5;
+  --ink-secondary: #a8b3cf;
+  --ink-muted: #6b7693;
+  --accent: #e0a93b;
+  --accent-hover: #f0bc55;
+  --accent-light: #f0bc55;
+  --accent-bg: rgba(224, 169, 59, 0.12);
+  --border: #1f2a40;
+  --divider: #16213a;
+  --shadow: rgba(0, 0, 0, 0.45);
+}
+
+/* ============ 根容器 ============ */
+.dreamtale-reader {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  min-height: 400px;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--dr-font-sans);
+  font-size: 14px;
+  overflow: hidden;
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+/* ============ 顶栏 ============ */
+.dr-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  height: var(--dr-toolbar-h);
+  padding: 0 16px;
+  background: var(--bg-toolbar);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  z-index: 10;
+  transition: background-color 0.25s ease, border-color 0.25s ease, transform 0.25s ease;
+}
+
+.dr-toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  flex: 1;
+}
+
+.dr-toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.dr-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  font-family: var(--dr-font-sans);
+  font-size: 16px;
+  color: var(--ink-secondary);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+.dr-icon-btn:hover {
+  background: var(--bg-hover);
+  color: var(--ink);
+}
+.dr-icon-btn:active { background: var(--bg-active); }
+.dr-icon-btn[aria-pressed="true"] {
+  color: var(--accent);
+  background: var(--accent-bg);
+}
+
+.dr-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.dr-toolbar-title {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.dr-book-title {
+  font-family: var(--dr-font-serif);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dr-chapter-title {
+  font-size: 12px;
+  color: var(--ink-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 2px;
+}
+
+/* ============ 字体面板（弹出层） ============ */
+.dr-font-panel {
+  position: absolute;
+  top: calc(var(--dr-toolbar-h) + 6px);
+  right: 16px;
+  z-index: 30;
+  width: 260px;
+  padding: 16px;
+  background: var(--bg-modal);
+  border: 1px solid var(--border);
+  border-radius: var(--dr-radius);
+  box-shadow: 0 8px 24px var(--shadow);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-8px);
+  transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s ease;
+}
+.dr-font-panel.open {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.dr-fp-group {
+  margin-bottom: 14px;
+}
+.dr-fp-group:last-child { margin-bottom: 0; }
+
+.dr-fp-label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-secondary);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.dr-fp-val {
+  font-weight: 500;
+  color: var(--accent);
+  text-transform: none;
+  letter-spacing: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.dr-fp-btns {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.dr-fp-btn {
+  flex: 1;
+  min-width: 50px;
+  padding: 6px 8px;
+  font-family: var(--dr-font-sans);
+  font-size: 12px;
+  color: var(--ink-secondary);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+.dr-fp-btn:hover {
+  background: var(--bg-hover);
+  color: var(--ink);
+}
+.dr-fp-btn.active {
+  color: #fff;
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.dreamtale-reader[data-theme="dark"] .dr-fp-btn.active { color: #0a0f1c; }
+.dreamtale-reader[data-theme="sepia"] .dr-fp-btn.active { color: #f5f0e6; }
+
+.dr-fp-range {
+  width: 100%;
+  height: 4px;
+  background: var(--bg-active);
+  border-radius: 2px;
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+  cursor: pointer;
+}
+.dr-fp-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  background: var(--accent);
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid var(--bg-modal);
+}
+.dr-fp-range::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  background: var(--accent);
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid var(--bg-modal);
+}
+
+/* ============ 主体：侧边栏 + 阅读区 ============ */
+.dr-main {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* ============ 侧边栏目录 ============ */
+.dr-sidebar {
+  width: var(--dr-sidebar-w);
+  min-width: 240px;
+  max-width: 360px;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-sidebar);
+  border-right: 1px solid var(--border);
+  overflow: hidden;
+  flex-shrink: 0;
+  transition: width 0.25s ease, background-color 0.25s ease, border-color 0.25s ease;
+}
+
+/* 桌面端折叠态 */
+.dr-sidebar.collapsed {
+  width: 0;
+  min-width: 0;
+  border-right: none;
+}
+
+.dr-sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.dr-sidebar-title {
+  margin: 0;
+  font-family: var(--dr-font-serif);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: 0.04em;
+}
+
+.dr-sidebar-action {
+  padding: 4px 8px;
+  font-size: 11px;
+  color: var(--ink-muted);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+.dr-sidebar-action:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.dr-tree-nav {
+  flex: 1;
+  padding: 6px 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+.dr-tree-nav::-webkit-scrollbar { width: 8px; }
+.dr-tree-nav::-webkit-scrollbar-track { background: transparent; }
+.dr-tree-nav::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
+}
+.dr-tree-nav::-webkit-scrollbar-thumb:hover { background: var(--ink-muted); }
+
+.dr-tree-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.dr-tree-node {
+  position: relative;
+}
+
+.dr-tree-toggle,
+.dr-tree-leaf {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 7px 14px;
+  font-family: var(--dr-font-sans);
+  font-size: 13px;
+  text-align: left;
+  color: var(--ink-primary);
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.dr-tree-toggle:hover,
+.dr-tree-leaf:hover { background: var(--bg-hover); }
+
+.dr-tree-leaf.active {
+  background: var(--bg-active);
+  color: var(--accent);
+  font-weight: 500;
+}
+
+.dr-tree-arrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  margin-right: 6px;
+  font-size: 10px;
+  color: var(--ink-muted);
+  transition: transform 0.2s ease;
+}
+.dr-tree-node.expanded > .dr-tree-toggle .dr-tree-arrow {
+  transform: rotate(90deg);
+}
+
+.dr-tree-icon {
+  margin-right: 6px;
+  color: var(--ink-muted);
+  font-size: 14px;
+}
+
+.dr-tree-text {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dr-tree-children {
+  display: none;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.dr-tree-node.expanded > .dr-tree-children {
+  display: block;
+}
+
+/* 子级缩进 */
+.dr-tree-node[data-depth="1"] > .dr-tree-toggle,
+.dr-tree-node[data-depth="1"] > .dr-tree-leaf {
+  padding-left: 36px;
+}
+
+/* ============ 侧边栏遮罩（移动端抽屉） ============ */
+.dr-sidebar-overlay {
+  display: none;
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 25;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+.dr-sidebar-overlay.open {
+  display: block;
+  opacity: 1;
+}
+
+/* ============ 阅读区 ============ */
+.dr-reader {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  position: relative;
+  background: var(--bg-paper);
+  -webkit-overflow-scrolling: touch;
+  transition: background-color 0.25s ease;
+}
+.dr-reader::-webkit-scrollbar { width: 12px; }
+.dr-reader::-webkit-scrollbar-track { background: transparent; }
+.dr-reader::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 6px;
+  border: 3px solid var(--bg-paper);
+}
+.dr-reader::-webkit-scrollbar-thumb:hover { background: var(--ink-muted); }
+
+/* ============ 章节正文排版 ============ */
+.dr-article {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 32px 40px 80px;
+  font-family: var(--dr-font-serif);
+  font-size: var(--dr-reader-font-size);
+  line-height: var(--dr-reader-line-height);
+  color: var(--ink);
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.dr-article-title {
+  margin: 0 0 1.2em;
+  padding-bottom: 0.5em;
+  font-family: var(--dr-font-serif);
+  font-size: 1.7em;
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--ink);
+  border-bottom: 2px solid var(--divider);
+  letter-spacing: 0.04em;
+}
+
+.dr-article h1,
+.dr-article h2,
+.dr-article h3,
+.dr-article h4,
+.dr-article h5,
+.dr-article h6 {
+  margin: 1.4em 0 0.7em;
+  font-family: var(--dr-font-serif);
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--ink);
+}
+.dr-article h1 { font-size: 1.5em; }
+.dr-article h2 { font-size: 1.3em; padding-bottom: 0.3em; border-bottom: 1px solid var(--divider); }
+.dr-article h3 { font-size: 1.15em; }
+.dr-article h4 { font-size: 1.05em; }
+.dr-article h5 { font-size: 1em; color: var(--ink-secondary); }
+.dr-article h6 { font-size: 0.9em; color: var(--ink-muted); }
+
+.dr-article p {
+  margin: 0 0 1em;
+  text-indent: 0;  /* DreamTale 正文不强制首行缩进，交给作者在 markdown 内决定 */
+}
+
+.dr-article ul,
+.dr-article ol {
+  margin: 0 0 1em;
+  padding-left: 1.8em;
+}
+.dr-article li { margin: 0.25em 0; }
+.dr-article li > ul,
+.dr-article li > ol { margin: 0.25em 0; }
+
+.dr-article blockquote {
+  margin: 0 0 1em;
+  padding: 0.5em 1em;
+  border-left: 4px solid var(--accent);
+  background: var(--accent-bg);
+  color: var(--ink-secondary);
+  border-radius: 0 6px 6px 0;
+}
+.dr-article blockquote p:last-child { margin-bottom: 0; }
+.dr-article blockquote blockquote {
+  margin-top: 0.5em;
+  margin-bottom: 0;
+}
+
+.dr-article pre {
+  margin: 0 0 1em;
+  padding: 14px 16px;
+  font-family: var(--dr-font-mono);
+  font-size: 0.88em;
+  line-height: 1.6;
+  color: var(--ink);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.dr-article code {
+  font-family: var(--dr-font-mono);
+  font-size: 0.92em;
+  padding: 0.15em 0.4em;
+  background: var(--bg-card);
+  border-radius: 3px;
+}
+.dr-article pre code {
+  padding: 0;
+  background: transparent;
+  border-radius: 0;
+  font-size: inherit;
+}
+
+.dr-article hr {
+  margin: 2em 0;
+  border: none;
+  border-top: 2px solid var(--divider);
+}
+
+.dr-article a {
+  color: var(--accent);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+.dr-article a:hover {
+  border-bottom-color: var(--accent);
+  color: var(--accent-hover);
+}
+
+.dr-article strong { font-weight: 700; }
+.dr-article em { font-style: italic; }
+.dr-article del { color: var(--ink-muted); }
+
+.dr-article img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 6px;
+}
+
+.dr-article table {
+  width: 100%;
+  margin: 0 0 1em;
+  border-collapse: collapse;
+  font-size: 0.95em;
+}
+.dr-article th,
+.dr-article td {
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  text-align: left;
+}
+.dr-article th {
+  background: var(--bg-card);
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.dr-empty {
+  padding: 48px 24px;
+  text-align: center;
+  color: var(--ink-muted);
+  font-size: 14px;
+}
+
+/* ============ 章节导航 ============ */
+.dr-chapter-nav {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 0 40px 60px;
+}
+
+.dr-nav-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  font-family: var(--dr-font-sans);
+  font-size: 14px;
+  color: var(--ink-secondary);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+.dr-nav-btn:hover:not(:disabled) {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--accent-bg);
+}
+.dr-nav-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.dr-nav-arrow {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.dr-next-btn { margin-left: auto; }
+
+/* ============ 阅读进度条 ============ */
+.dr-progress-bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 3px;
+  background: var(--bg-active);
+  z-index: 20;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+.dr-progress-fill {
+  height: 100%;
+  width: 0%;
+  background: var(--accent);
+  border-radius: 0 2px 2px 0;
+  transition: width 0.1s linear;
+}
+
+/* ============ 沉浸模式 ============ */
+/* 沉浸：隐藏侧边栏、顶栏、进度条；正文占满 */
+.dreamtale-reader.immersive-mode .dr-toolbar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 30;
+  transform: translateY(-100%);
+  opacity: 0;
+  pointer-events: none;
+}
+.dreamtale-reader.immersive-mode .dr-sidebar {
+  width: 0;
+  min-width: 0;
+  border-right: none;
+}
+.dreamtale-reader.immersive-mode .dr-progress-bar {
+  opacity: 0.4;
+}
+
+/* UI 显示态（沉浸模式下点击正文区域切换） */
+.dreamtale-reader.immersive-mode:not(.ui-hidden) .dr-toolbar {
+  transform: translateY(0);
+  opacity: 1;
+  pointer-events: auto;
+}
+.dreamtale-reader.immersive-mode:not(.ui-hidden) .dr-progress-bar {
+  opacity: 1;
+}
+
+/* 退出沉浸按钮（仅在沉浸态可见） */
+.dr-exit-immerse {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 40;
+  display: none;
+  width: 36px;
+  height: 36px;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  color: var(--ink-secondary);
+  background: var(--bg-modal);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 2px 8px var(--shadow);
+  transition: color 0.15s ease, background-color 0.15s ease;
+}
+.dr-exit-immerse:hover {
+  color: var(--accent);
+  background: var(--bg-hover);
+}
+.dreamtale-reader.immersive-mode.ui-hidden .dr-exit-immerse {
+  display: inline-flex;
+}
+
+/* ============ 响应式（≤768px 侧边栏转抽屉） ============ */
+@media (max-width: 768px) {
+  .dr-toolbar {
+    padding: 0 10px;
+    height: 48px;
+  }
+  .dr-icon-btn {
+    width: 32px;
+    height: 32px;
+    font-size: 14px;
+  }
+  .dr-book-title { font-size: 14px; }
+  .dr-chapter-title { font-size: 11px; }
+
+  /* 字体面板缩小 */
+  .dr-font-panel {
+    right: 8px;
+    left: 8px;
+    width: auto;
+    max-width: 320px;
+    margin-left: auto;
+  }
+
+  /* 侧边栏转抽屉 */
+  .dr-sidebar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 80vw;
+    max-width: 320px;
+    min-width: 0;
+    z-index: 35;
+    transform: translateX(-100%);
+    transition: transform 0.25s ease, background-color 0.25s ease;
+    box-shadow: 4px 0 16px var(--shadow);
+  }
+  .dr-sidebar.open-mobile {
+    transform: translateX(0);
+  }
+  .dr-sidebar.collapsed {
+    /* 移动端 collapsed 类不生效，由 open-mobile 控制显隐 */
+    width: 80vw;
+    border-right: 1px solid var(--border);
+  }
+
+  /* 侧边栏遮罩在阅读区上方 */
+  .dr-sidebar-overlay {
+    z-index: 32;
+  }
+
+  /* 正文 padding 缩小 */
+  .dr-article {
+    padding: 20px 18px 60px;
+    font-size: 16px;
+  }
+  .dr-article-title { font-size: 1.4em; }
+
+  .dr-chapter-nav {
+    padding: 0 18px 40px;
+  }
+  .dr-nav-btn {
+    padding: 8px 14px;
+    font-size: 13px;
+  }
+}
+
+/* ============ 减少动画偏好 ============ */
+@media (prefers-reduced-motion: reduce) {
+  .dreamtale-reader *,
+  .dreamtale-reader *::before,
+  .dreamtale-reader *::after {
+    transition: none !important;
+    animation: none !important;
+  }
+}

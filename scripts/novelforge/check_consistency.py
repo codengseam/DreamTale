@@ -55,7 +55,14 @@ from typing import Any
 try:
     from .schema import validate_character_state
 except ImportError:  # 兼容直接 python scripts/novelforge/check_consistency.py 调用
-    from scripts.novelforge.schema import validate_character_state  # type: ignore
+    # 直接执行脚本时 sys.path[0] 是脚本所在目录，可 import schema；
+    # 同时把父父目录（workspace 根）加入 sys.path 以兼容 `from scripts.novelforge.schema`。
+    _here = os.path.dirname(os.path.abspath(__file__))
+    _root = os.path.dirname(os.path.dirname(_here))
+    for _p in (_here, _root):
+        if _p not in sys.path:
+            sys.path.insert(0, _p)
+    from schema import validate_character_state  # type: ignore
 
 
 # ============================================================================

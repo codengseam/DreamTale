@@ -10,6 +10,7 @@
 
 ### 最近 20 条沉淀（按日期倒序）
 
+- [2026-07-28 DreamTale 网页版 5 阶段收尾质检与文档整合（2026-07-28，主 agent 编排 + 3 子 agent 并行 + loop_log 沉淀）](loop_log/2026-07.md#loop-20260728-f50804)
 - [2026-07-18 魔搭 ModelScope Studio Docker 部署 9 坑沉淀（2026-07-18，三级降级 push + workflow scope 校验 + 一键部署工具沉淀）](loop_log/2026-07.md#loop-20260718-0f48d8)
 - [2026-07-07 NovelForge 系统从 0 到 1 搭建（2026-07-07，Phase 0-7 跨 8 阶段 + 多 Agent 并行契约一致性 + 双模式架构方法论）](loop_log/2026-07.md#loop-20260707-2ae39e)
 - [2026-07-06 离线导出多格式扩展（2026-07-06，md → txt/epub，4 commit 拆分 + 三专家评审 + formatter 注册表抽象）](loop_log/2026-07.md#loop-20260706-468119)
@@ -29,7 +30,6 @@
 - [2026-06-30 学会学习专栏 32 篇并行生成（2026-06-30，专家团评审 + 14 条误传核验 + 跨章 chapter_sort 盲区发现）](loop_log/2026-06.md#loop-20260630-abd1dd)
 - [2026-06-30 字数事实核对脚本（2026-06-30，BUG-038，第一性原理剥离 LLM 数数能力）](loop_log/2026-06.md#loop-20260630-cb4b0f)
 - [2026-06-30 AI 时代全栈知识边界专栏生成（2026-06-30，35 篇 5 批并行 + 四轮质检闭环 + BUG-039）](loop_log/2026-06.md#loop-20260630-de2309)
-- [2026-06-30 新媒体运营实战课专栏生成（modern 桶 40 篇 + 跨篇金句通胀治理）](loop_log/2026-06.md#loop-20260630-169aa7)
 
 ### 主题锚点
 
@@ -45,15 +45,15 @@
 
 | #lesson slug | 出现次数 | 说明 |
 |---|---|---|
-| `#git_hygiene`（推送/合并/冲突/分支治理/commit 覆盖） | 7 | — |
+| `#git_hygiene`（推送/合并/冲突/分支治理/commit 覆盖） | 8 | — |
 | `#reader_interaction`（阅读器/沉浸/翻页/吸底栏/SW 缓存） | 15 | — |
-| `#content_quality`（质检规则/灵魂注入/标题评分） | 33 | — |
+| `#content_quality`（质检规则/灵魂注入/标题评分） | 34 | — |
 | `#book_structure`（排序/校验/命名/去重/双源同步） | 31 | — |
-| `#deployment`（GitHub Pages/魔搭/.nojekyll/SW） | 7 | — |
+| `#deployment`（GitHub Pages/魔搭/.nojekyll/SW） | 8 | — |
 | `#soul_injection`（灵魂注入/章回体/总编Agent） | 3 | — |
 | `#ai_course`（专栏批量生成 / subagent 结果丢失） | 20 | — |
 
-> 共 65 条沉淀，按月份分片存储于 `docs/loop_log/`。
+> 共 66 条沉淀，按月份分片存储于 `docs/loop_log/`。
 
 <!-- AUTOGEN END: loop_log index -->
 
