@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="sepia">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="DreamTale · 极简 AI 小说创作系统" />
+  <title>DreamTale · 极简 AI 小说创作系统</title>
+
+  <!-- ============ 全局样式 ============ -->
+  <!-- 顺序：app.css（全局变量+布局+组件）→ editor.css（编辑器）→ reader.css（阅读器） -->
+  <link rel="stylesheet" href="static/css/app.css" />
+  <link rel="stylesheet" href="static/css/editor.css" />
+  <link rel="stylesheet" href="static/css/reader.css" />
+</head>
+<body data-theme="sepia">
+  <!-- ============ 应用主框架 ============ -->
+  <div class="app-shell">
+
+    <!-- ============ 顶栏 ============ -->
+    <header class="topbar">
+      <!-- 移动端侧边栏抽屉开关 -->
+      <button class="sidebar-toggle" id="sidebar-toggle" aria-label="切换侧边栏">☰</button>
+
+      <!-- Logo -->
+      <div class="logo">
+        <span class="logo-icon">📖</span>DreamTale
+      </div>
+
+      <div class="topbar-spacer"></div>
+
+      <!-- 项目切换器 -->
+      <div class="project-switcher">
+        <label for="project-select">当前作品</label>
+        <select id="project-select" class="input" style="width: auto; min-width: 180px;">
+          <option value="">— 未选择 —</option>
+        </select>
+      </div>
+
+      <!-- 导入/导出 -->
+      <button class="btn btn-ghost btn-sm" id="btn-export" title="导出当前项目为 ZIP">⬇ 导出</button>
+      <button class="btn btn-ghost btn-sm" id="btn-import" title="从 ZIP 导入">⬆ 导入</button>
+      <input type="file" id="import-input" accept=".zip" hidden />
+
+      <!-- 主题切换 -->
+      <button class="btn btn-ghost btn-icon" id="btn-theme" title="切换主题（护眼/亮/暗）">🎨</button>
+
+      <!-- AI 状态指示器占位 -->
+      <span class="ai-status offline" id="ai-status" title="AI 服务状态">
+        <span class="dot"></span>
+        <span class="text">AI 离线</span>
+      </span>
+    </header>
+
+    <!-- ============ 侧边导航栏 ============ -->
+    <aside class="sidebar" id="sidebar">
+      <div class="nav-group">
+        <div class="nav-group-title">创作</div>
+        <div class="nav-item" data-route="#/projects">
+          <span class="nav-icon">📚</span><span>作品</span>
+        </div>
+        <div class="nav-item" data-route="#/settings">
+          <span class="nav-icon">🎭</span><span>设定</span>
+        </div>
+        <div class="nav-item" data-route="#/outline">
+          <span class="nav-icon">🗺️</span><span>大纲</span>
+        </div>
+        <div class="nav-item" data-route="#/chapters">
+          <span class="nav-icon">✍️</span><span>章节</span>
+        </div>
+        <div class="nav-item" data-route="#/hooks">
+          <span class="nav-icon">🪝</span><span>伏笔</span>
+        </div>
+      </div>
+
+      <div class="nav-group">
+        <div class="nav-group-title">阅读</div>
+        <div class="nav-item" data-route="#/reader">
+          <span class="nav-icon">📖</span><span>阅读</span>
+        </div>
+      </div>
+
+      <div class="nav-group">
+        <div class="nav-group-title">AI 辅助</div>
+        <div class="nav-item" data-route="#/ai-panel">
+          <span class="nav-icon">🤖</span><span>AI 配置</span>
+        </div>
+        <div class="nav-item" data-route="#/ai-writer">
+          <span class="nav-icon">✍️</span><span>AI 写作</span>
+        </div>
+      </div>
+
+      <div class="nav-group">
+        <div class="nav-group-title">扩展</div>
+        <div class="nav-item" data-route="#/hotspots">
+          <span class="nav-icon">🔥</span><span>热点</span>
+        </div>
+        <div class="nav-item" data-route="#/inspirations">
+          <span class="nav-icon">💡</span><span>灵感库</span>
+        </div>
+      </div>
+
+      <div class="nav-group">
+        <div class="nav-group-title">审计与集成</div>
+        <div class="nav-item" data-route="#/audit">
+          <span class="nav-icon">🛡️</span><span>审计</span>
+        </div>
+        <div class="nav-item" data-route="#/trae">
+          <span class="nav-icon">🔌</span><span>Trae 集成</span>
+        </div>
+      </div>
+
+      <div class="sidebar-footer">
+        <div>DreamTale v0.1.0</div>
+        <div id="storage-mode-label" style="margin-top: 4px;">存储：初始化中…</div>
+      </div>
+    </aside>
+
+    <!-- 移动端抽屉遮罩 -->
+    <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
+
+    <!-- ============ 主内容区 ============ -->
+    <main class="main">
+      <!-- app.js 动态渲染各功能页面到 #app-view -->
+      <div id="app-view">
+        <div class="loading">正在启动 DreamTale…</div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ============ 全局容器 ============ -->
+  <!-- toast 通知容器 -->
+  <div id="toast-container"></div>
+  <!-- 模态框根节点（动态注入） -->
+  <div id="modal-root"></div>
+
+  <!-- ============ 脚本加载 ============ -->
+  <!-- 加载策略：
+       - vendor/marked.min.js（UMD，挂载 window.marked）用 defer 经典脚本
+       - js/app.js 用 defer 经典脚本（非 module），IIFE 模式 + window.DreamTale 命名空间
+       - app.js 内部用动态 import() 加载 core/storage/editor/reader 等 ES Module 依赖
+       - file:// 下 import 会失败（CORS），app.js 检测后显示「请通过 server.py 启动」提示
+       - http://localhost 下完全功能正常
+  -->
+  <script src="static/vendor/marked.min.js" defer></script>
+  <!-- features/*.js 用经典 script IIFE 模式，挂载 window.DreamTaleFeatures，需在 app.js 之前加载 -->
+  <script src="static/js/features/projects.js" defer></script>
+  <script src="static/js/features/settings.js" defer></script>
+  <script src="static/js/features/outline.js" defer></script>
+  <script src="static/js/features/chapters.js" defer></script>
+  <script src="static/js/features/hooks.js" defer></script>
+  <script src="static/js/features/ai-panel.js" defer></script>
+  <script src="static/js/features/ai-writer.js" defer></script>
+  <script src="static/js/features/hotspots.js" defer></script>
+  <script src="static/js/features/inspirations.js" defer></script>
+  <script src="static/js/features/audit.js" defer></script>
+  <script src="static/js/features/trae-integration.js" defer></script>
+  <script src="static/js/app.js" defer></script>
+</body>
+</html>

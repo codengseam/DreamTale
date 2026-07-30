@@ -1,0 +1,493 @@
+/* ============================================================
+   DreamTale · Markdown 编辑器样式（editor.css）
+   结构：CSS 变量（三主题）→ 根容器 → 工具栏 → 编辑主体
+        → 三模式布局 → 预览排版 → 字数浮标 → 保存指示
+        → 响应式
+   主题：data-theme="dark|light|sepia"
+        暗色 #0a0f1c / #e0a93b
+        亮色 #ffffff / #333333
+        护眼 #f5f0e6 / #3a3225
+   ============================================================ */
+
+/* ============ 三主题变量 ============ */
+.dreamtale-editor {
+  /* 默认（亮色）变量 */
+  --de-bg: #ffffff;
+  --de-bg-soft: #fafafa;
+  --de-bg-toolbar: #f7f7f8;
+  --de-bg-hover: #f0f0f2;
+  --de-bg-active: #e6e6ea;
+  --de-bg-preview: #ffffff;
+  --de-border: #e2e2e6;
+  --de-divider: #ededf0;
+  --de-ink: #1f2024;
+  --de-ink-secondary: #545660;
+  --de-ink-muted: #9094a0;
+  --de-accent: #1f6feb;
+  --de-accent-hover: #1858c4;
+  --de-accent-bg: rgba(31, 111, 235, 0.10);
+  --de-shadow: rgba(0, 0, 0, 0.06);
+  --de-radius: 6px;
+  --de-toolbar-h: 44px;
+  --de-font-mono: "SF Mono", "JetBrains Mono", Menlo, Consolas, "Source Code Pro", monospace;
+  --de-font-sans: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB",
+                  "Microsoft YaHei", "Noto Sans SC", sans-serif;
+  --de-font-serif: "Songti SC", "STSong", "SimSun", "Source Han Serif SC",
+                   "Noto Serif SC", Georgia, serif;
+
+  /* 基础布局 */
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  min-height: 320px;
+  background: var(--de-bg);
+  color: var(--de-ink);
+  font-family: var(--de-font-sans);
+  font-size: 14px;
+  overflow: hidden;
+  border: 1px solid var(--de-border);
+  border-radius: var(--de-radius);
+  box-sizing: border-box;
+  transition: background-color 0.25s ease, color 0.25s ease, border-color 0.25s ease;
+}
+
+/* 暗色主题 */
+.dreamtale-editor[data-theme="dark"] {
+  --de-bg: #0a0f1c;
+  --de-bg-soft: #11182a;
+  --de-bg-toolbar: #0d1424;
+  --de-bg-hover: #18223a;
+  --de-bg-active: #1f2d4a;
+  --de-bg-preview: #0a0f1c;
+  --de-border: #1f2a40;
+  --de-divider: #16213a;
+  --de-ink: #e3e8f5;
+  --de-ink-secondary: #a8b3cf;
+  --de-ink-muted: #6b7693;
+  --de-accent: #e0a93b;
+  --de-accent-hover: #f0bc55;
+  --de-accent-bg: rgba(224, 169, 59, 0.12);
+  --de-shadow: rgba(0, 0, 0, 0.45);
+}
+
+/* 护眼主题 */
+.dreamtale-editor[data-theme="sepia"] {
+  --de-bg: #f5f0e6;
+  --de-bg-soft: #f0e9d8;
+  --de-bg-toolbar: #ebe3cf;
+  --de-bg-hover: #e3d9bf;
+  --de-bg-active: #d9ccab;
+  --de-bg-preview: #f5f0e6;
+  --de-border: #d4c7a8;
+  --de-divider: #e0d5b8;
+  --de-ink: #3a3225;
+  --de-ink-secondary: #5e4f3a;
+  --de-ink-muted: #8a7558;
+  --de-accent: #a06030;
+  --de-accent-hover: #834e26;
+  --de-accent-bg: rgba(160, 96, 48, 0.12);
+  --de-shadow: rgba(60, 40, 20, 0.10);
+}
+
+/* ============ 工具栏 ============ */
+.de-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  height: var(--de-toolbar-h);
+  padding: 0 10px;
+  background: var(--de-bg-toolbar);
+  border-bottom: 1px solid var(--de-border);
+  flex-shrink: 0;
+  transition: background-color 0.25s ease, border-color 0.25s ease;
+}
+
+.de-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.de-toolbar-actions::-webkit-scrollbar { height: 4px; }
+.de-toolbar-actions::-webkit-scrollbar-thumb {
+  background: var(--de-border);
+  border-radius: 2px;
+}
+
+.de-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 8px;
+  font-family: var(--de-font-sans);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--de-ink-secondary);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.de-btn:hover:not(:disabled) {
+  background: var(--de-bg-hover);
+  color: var(--de-ink);
+}
+
+.de-btn:active:not(:disabled) {
+  background: var(--de-bg-active);
+}
+
+.de-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* 加粗按钮加粗体、斜体按钮加斜体，便于辨识 */
+.de-btn-bold { font-weight: 800; }
+.de-btn-italic { font-style: italic; font-family: var(--de-font-serif); }
+.de-btn-h1, .de-btn-h2 { font-family: var(--de-font-serif); font-weight: 700; }
+.de-btn-h1 { font-size: 14px; }
+.de-btn-h2 { font-size: 13px; }
+.de-btn-quote { font-family: var(--de-font-serif); }
+.de-btn-list { font-size: 16px; }
+.de-btn-link { font-size: 14px; }
+.de-btn-hr { font-size: 16px; }
+
+.de-toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+/* 模式切换按钮组 */
+.de-mode-group {
+  display: inline-flex;
+  background: var(--de-bg-soft);
+  border: 1px solid var(--de-border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.de-mode-btn {
+  padding: 5px 12px;
+  font-family: var(--de-font-sans);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--de-ink-secondary);
+  background: transparent;
+  border: none;
+  border-right: 1px solid var(--de-border);
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+.de-mode-btn:last-child { border-right: none; }
+.de-mode-btn:hover { background: var(--de-bg-hover); color: var(--de-ink); }
+.de-mode-btn.active {
+  background: var(--de-accent);
+  color: #fff;
+}
+.dreamtale-editor[data-theme="dark"] .de-mode-btn.active { color: #0a0f1c; }
+.dreamtale-editor[data-theme="sepia"] .de-mode-btn.active { color: #f5f0e6; }
+
+/* 字数统计 */
+.de-counter {
+  font-family: var(--de-font-sans);
+  font-size: 12px;
+  color: var(--de-ink-muted);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 保存指示浮标 */
+.de-save-flag {
+  font-size: 12px;
+  color: var(--de-accent);
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  white-space: nowrap;
+}
+.de-save-flag.visible { opacity: 1; }
+
+/* ============ 编辑主体（三模式布局）============ */
+.de-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--de-bg);
+}
+
+/* 单栏（source / preview 模式）：占满 */
+.de-pane {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.de-pane.hidden {
+  display: none;
+}
+
+/* 源码区 */
+.de-pane-source {
+  background: var(--de-bg);
+}
+
+.de-textarea {
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  padding: 16px 20px;
+  font-family: var(--de-font-mono);
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--de-ink);
+  background: transparent;
+  border: none;
+  outline: none;
+  resize: none;
+  box-sizing: border-box;
+  tab-size: 2;
+  -moz-tab-size: 2;
+  -o-tab-size: 2;
+  caret-color: var(--de-accent);
+  transition: color 0.25s ease;
+}
+
+.de-textarea::placeholder {
+  color: var(--de-ink-muted);
+}
+
+.de-textarea::-webkit-scrollbar { width: 10px; }
+.de-textarea::-webkit-scrollbar-track { background: transparent; }
+.de-textarea::-webkit-scrollbar-thumb {
+  background: var(--de-border);
+  border-radius: 5px;
+}
+.de-textarea::-webkit-scrollbar-thumb:hover { background: var(--de-ink-muted); }
+
+/* 分隔条（split 模式） */
+.de-divider {
+  width: 6px;
+  background: var(--de-bg-toolbar);
+  border-left: 1px solid var(--de-border);
+  border-right: 1px solid var(--de-border);
+  cursor: col-resize;
+  flex-shrink: 0;
+  transition: background-color 0.25s ease, border-color 0.25s ease;
+}
+.de-divider.hidden { display: none; }
+.de-divider:hover { background: var(--de-bg-hover); }
+
+/* 预览区 */
+.de-pane-preview {
+  background: var(--de-bg-preview);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.de-pane-preview.hidden { display: none; }
+
+.de-preview {
+  padding: 16px 24px;
+  font-family: var(--de-font-serif);
+  font-size: 16px;
+  line-height: 1.8;
+  color: var(--de-ink);
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+/* split 模式：源码与预览各占一半 */
+.dreamtale-editor[data-mode="split"] .de-pane-source,
+.dreamtale-editor[data-mode="split"] .de-pane-preview {
+  flex: 1 1 50%;
+}
+
+/* preview 模式：预览占满，工具栏动作禁用 */
+.dreamtale-editor[data-mode="preview"] .de-pane-preview {
+  flex: 1;
+}
+
+/* ============ 预览区 Markdown 排版 ============ */
+.de-preview h1,
+.de-preview h2,
+.de-preview h3,
+.de-preview h4,
+.de-preview h5,
+.de-preview h6 {
+  margin: 1.2em 0 0.6em;
+  font-family: var(--de-font-serif);
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--de-ink);
+}
+.de-preview h1 { font-size: 1.7em; border-bottom: 2px solid var(--de-divider); padding-bottom: 0.3em; }
+.de-preview h2 { font-size: 1.45em; border-bottom: 1px solid var(--de-divider); padding-bottom: 0.3em; }
+.de-preview h3 { font-size: 1.25em; }
+.de-preview h4 { font-size: 1.1em; }
+.de-preview h5 { font-size: 1em; }
+.de-preview h6 { font-size: 0.9em; color: var(--de-ink-secondary); }
+
+.de-preview p {
+  margin: 0 0 0.9em;
+}
+
+.de-preview ul,
+.de-preview ol {
+  margin: 0 0 0.9em;
+  padding-left: 1.8em;
+}
+
+.de-preview li { margin: 0.2em 0; }
+
+.de-preview blockquote {
+  margin: 0 0 0.9em;
+  padding: 0.3em 1em;
+  border-left: 4px solid var(--de-accent);
+  background: var(--de-accent-bg);
+  color: var(--de-ink-secondary);
+  border-radius: 0 4px 4px 0;
+}
+.de-preview blockquote p:last-child { margin-bottom: 0; }
+
+.de-preview pre {
+  margin: 0 0 0.9em;
+  padding: 14px 16px;
+  font-family: var(--de-font-mono);
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--de-ink);
+  background: var(--de-bg-soft);
+  border: 1px solid var(--de-border);
+  border-radius: 6px;
+  overflow-x: auto;
+}
+.de-preview code {
+  font-family: var(--de-font-mono);
+  font-size: 0.92em;
+  padding: 0.15em 0.4em;
+  background: var(--de-bg-soft);
+  border-radius: 3px;
+}
+.de-preview pre code {
+  padding: 0;
+  background: transparent;
+  border-radius: 0;
+  font-size: 13px;
+}
+
+.de-preview hr {
+  margin: 1.6em 0;
+  border: none;
+  border-top: 2px solid var(--de-divider);
+}
+
+.de-preview a {
+  color: var(--de-accent);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+.de-preview a:hover {
+  border-bottom-color: var(--de-accent);
+  color: var(--de-accent-hover);
+}
+
+.de-preview strong { font-weight: 700; }
+.de-preview em { font-style: italic; }
+
+.de-preview img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 4px;
+}
+
+.de-preview table {
+  width: 100%;
+  margin: 0 0 0.9em;
+  border-collapse: collapse;
+  font-size: 0.95em;
+}
+.de-preview th,
+.de-preview td {
+  padding: 8px 12px;
+  border: 1px solid var(--de-border);
+  text-align: left;
+}
+.de-preview th {
+  background: var(--de-bg-soft);
+  font-weight: 700;
+}
+
+/* ============ 响应式（≤768px） ============ */
+@media (max-width: 768px) {
+  .dreamtale-editor {
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+  }
+
+  .de-toolbar {
+    flex-wrap: wrap;
+    height: auto;
+    padding: 6px 8px;
+    gap: 8px;
+  }
+  .de-toolbar-actions {
+    order: 2;
+    width: 100%;
+  }
+  .de-toolbar-right {
+    order: 1;
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  /* 移动端强制 split 退化为 source（避免两栏过窄） */
+  .dreamtale-editor[data-mode="split"] .de-pane-source,
+  .dreamtale-editor[data-mode="split"] .de-pane-preview {
+    flex: 1 1 100%;
+  }
+  .dreamtale-editor[data-mode="split"] .de-divider {
+    display: none;
+  }
+  /* split 模式下改为垂直堆叠 */
+  .dreamtale-editor[data-mode="split"] .de-body {
+    flex-direction: column;
+  }
+
+  .de-textarea {
+    padding: 12px 14px;
+    font-size: 15px;
+  }
+  .de-preview {
+    padding: 12px 16px;
+    font-size: 15px;
+  }
+}
+
+/* ============ 减少动画偏好 ============ */
+@media (prefers-reduced-motion: reduce) {
+  .dreamtale-editor,
+  .de-btn,
+  .de-mode-btn,
+  .de-divider,
+  .de-textarea,
+  .de-save-flag {
+    transition: none !important;
+  }
+}
