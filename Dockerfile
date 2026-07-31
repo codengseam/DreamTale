@@ -50,7 +50,7 @@ RUN pip install --no-cache-dir --upgrade pip \
 # 注：requirements.txt 已在上方复制用于 pip install，此处不重复
 COPY server.py ./
 COPY scripts/dreamtale/ ./scripts/dreamtale/
-COPY static/ ./static/
+COPY web/ ./web/
 
 # 运行时目录：ModelScope 唯一持久化目录 /mnt/workspace
 # - data/：SQLite 数据库文件
