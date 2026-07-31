@@ -62,12 +62,13 @@
   }
 
   function currentProjectId() {
-    const id = DT().state.currentProject;
-    if (!id) {
+    const proj = DT().state.currentProject;
+    if (!proj) {
       DT().notify('请先在「作品管理」中选择一个作品', 'warning');
       return null;
     }
-    return id;
+    // state.currentProject 是 Project 实例对象，存储层需要的是 id 字符串
+    return proj.id;
   }
 
   /** 生成 hook_id：H_<时间戳base36>_<随机3位> */

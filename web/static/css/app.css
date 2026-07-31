@@ -814,3 +814,875 @@ select.input:focus {
     margin: 16px;
   }
 }
+
+/* ============================================================
+   Features 模块组件样式（dt- 前缀）
+   被 static/js/features/*.js 使用：按钮/卡片/模态/表单/标签页
+   /工具栏/进度条/大纲/设定/灵感库等。
+   复用上方 CSS 变量，自动适配 dark/light/sepia 三主题。
+   ============================================================ */
+
+/* ============ 页面工具栏 ============ */
+.dt-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 12px 0;
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--divider);
+}
+.dt-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-left: auto;
+}
+.dt-page-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--ink-primary);
+  font-family: var(--font-serif);
+  margin: 0;
+}
+.dt-section-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink-primary);
+  margin: 0;
+}
+
+/* ============ 按钮（核心） ============ */
+.dt-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 7px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-card);
+  color: var(--ink-primary);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.4;
+  cursor: pointer;
+  transition: background var(--transition-fast), border-color var(--transition-fast),
+              color var(--transition-fast), transform var(--transition-fast),
+              box-shadow var(--transition-fast);
+  white-space: nowrap;
+  user-select: none;
+}
+.dt-btn:hover {
+  background: var(--bg-hover);
+  border-color: var(--ink-muted);
+}
+.dt-btn:active {
+  transform: translateY(1px);
+}
+.dt-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+.dt-btn:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-bg);
+}
+
+.dt-btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+[data-theme="sepia"] .dt-btn-primary { color: #faf4e6; }
+[data-theme="dark"] .dt-btn-primary { color: #0a0f1c; }
+.dt-btn-primary:hover {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+  box-shadow: 0 2px 8px var(--accent-bg);
+}
+
+.dt-btn-danger {
+  background: var(--error);
+  border-color: var(--error);
+  color: #fff;
+}
+.dt-btn-danger:hover {
+  filter: brightness(0.92);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.dt-btn-sm {
+  padding: 4px 10px;
+  font-size: 12px;
+}
+.dt-btn-lg {
+  padding: 10px 22px;
+  font-size: 15px;
+}
+
+/* 过滤按钮组 */
+.dt-filter-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+[data-theme="sepia"] .dt-filter-btn.active { color: #faf4e6; }
+[data-theme="dark"] .dt-filter-btn.active { color: #0a0f1c; }
+
+/* ============ 输入框 ============ */
+.dt-input,
+.dt-modal input[type="text"],
+.dt-modal input[type="number"],
+.dt-modal input[type="url"],
+.dt-modal input[type="search"],
+.dt-modal select,
+.dt-modal textarea,
+.dt-outline-form input[type="text"],
+.dt-outline-form input[type="number"],
+.dt-outline-form select,
+.dt-outline-form textarea {
+  display: block;
+  width: 100%;
+  padding: 7px 11px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-card);
+  color: var(--ink-primary);
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1.5;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+.dt-input:focus,
+.dt-modal input:focus,
+.dt-modal select:focus,
+.dt-modal textarea:focus,
+.dt-outline-form input:focus,
+.dt-outline-form textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-bg);
+}
+
+/* ============ 表单 ============ */
+.dt-form,
+.dt-outline-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.dt-form-row {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.dt-form-row > label,
+.dt-form-row label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink-secondary);
+}
+.dt-form-row-2col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+.dt-form-row-3col {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+.dt-req {
+  color: var(--error);
+  margin-left: 2px;
+}
+.dt-hint {
+  font-size: 12px;
+  color: var(--ink-muted);
+  line-height: 1.6;
+  margin: 4px 0;
+}
+.dt-hint code {
+  background: var(--bg-hover);
+  padding: 1px 5px;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--accent);
+}
+.dt-warn {
+  color: var(--warning);
+  font-weight: 600;
+}
+.dt-confirm {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  line-height: 1.7;
+}
+.dt-confirm-input {
+  font-size: 12px;
+  color: var(--ink-muted);
+  margin-top: 4px;
+}
+.dt-confirm code {
+  background: var(--bg-hover);
+  padding: 1px 6px;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  color: var(--accent);
+}
+
+/* ============ 模态框 ============ */
+.dt-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--bg-backdrop);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 24px;
+  animation: dt-fade-in 0.18s ease;
+}
+@keyframes dt-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.dt-modal {
+  background: var(--bg-modal);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 16px 48px var(--shadow-lg);
+  width: 560px;
+  max-width: 100%;
+  max-height: 85vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  animation: dt-pop-in 0.2s ease;
+}
+@keyframes dt-pop-in {
+  from { opacity: 0; transform: scale(0.96) translateY(8px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+.dt-modal-large { width: 760px; }
+.dt-modal-xlarge { width: 920px; }
+.dt-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--divider);
+}
+.dt-modal-header h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ink-primary);
+}
+.dt-modal-close {
+  background: none;
+  border: none;
+  font-size: 22px;
+  line-height: 1;
+  color: var(--ink-muted);
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+.dt-modal-close:hover {
+  background: var(--bg-hover);
+  color: var(--ink-primary);
+}
+.dt-modal-body {
+  padding: 20px;
+  overflow-y: auto;
+  flex: 1;
+}
+.dt-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 20px;
+  border-top: 1px solid var(--divider);
+  background: var(--bg-sidebar);
+}
+
+/* ============ 标签页 ============ */
+.dt-tabs {
+  margin-bottom: 16px;
+}
+.dt-tab-bar {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--divider);
+  padding: 0 4px;
+}
+.dt-tab {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 8px 16px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-secondary);
+  cursor: pointer;
+  transition: color var(--transition-fast), border-color var(--transition-fast),
+              background var(--transition-fast);
+  border-radius: var(--radius) var(--radius) 0 0;
+}
+.dt-tab:hover {
+  color: var(--ink-primary);
+  background: var(--bg-hover);
+}
+.dt-tab.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+  font-weight: 600;
+}
+.dt-tab-panel {
+  padding: 8px 4px;
+}
+
+/* ============ 卡片 ============ */
+.dt-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+.dt-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 16px 18px;
+  box-shadow: 0 1px 3px var(--shadow);
+  transition: box-shadow var(--transition), transform var(--transition),
+              border-color var(--transition);
+}
+.dt-card:hover {
+  box-shadow: 0 4px 14px var(--shadow-lg);
+  transform: translateY(-1px);
+}
+.dt-card-current {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent) inset, 0 4px 14px var(--accent-bg);
+}
+.dt-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.dt-card-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink-primary);
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+}
+.dt-card-subtitle {
+  font-size: 13px;
+  color: var(--ink-secondary);
+  margin: 0 0 8px;
+  line-height: 1.5;
+}
+.dt-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--ink-muted);
+  margin-bottom: 10px;
+}
+.dt-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--divider);
+}
+.dt-card-actions {
+  display: flex;
+  gap: 6px;
+}
+
+/* ============ 标签 / 徽章 ============ */
+.dt-tag {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--bg-hover);
+  color: var(--ink-secondary);
+  border: 1px solid var(--border);
+  white-space: nowrap;
+}
+.dt-tag-type {
+  background: var(--accent-bg);
+  color: var(--accent);
+  border-color: transparent;
+}
+.dt-tag-removable {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--accent-bg);
+  color: var(--accent);
+  border: 1px solid transparent;
+  padding: 3px 4px 3px 10px;
+}
+.dt-tag-removable button {
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  padding: 0 2px;
+  border-radius: 50%;
+  opacity: 0.7;
+}
+.dt-tag-removable button:hover {
+  opacity: 1;
+  background: rgba(0, 0, 0, 0.1);
+}
+.dt-badge {
+  display: inline-block;
+  font-size: 11px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-weight: 600;
+}
+.dt-badge-current {
+  background: var(--accent);
+  color: #fff;
+}
+[data-theme="sepia"] .dt-badge-current { color: #faf4e6; }
+[data-theme="dark"] .dt-badge-current { color: #0a0f1c; }
+.dt-badge-ok {
+  background: rgba(46, 125, 50, 0.15);
+  color: var(--success);
+}
+.dt-badge-warn {
+  background: rgba(237, 108, 2, 0.15);
+  color: var(--warning);
+}
+.dt-badge-danger {
+  background: rgba(198, 40, 40, 0.15);
+  color: var(--error);
+}
+
+/* ============ 空状态 / 提示 ============ */
+.dt-empty-hint {
+  text-align: center;
+  padding: 24px 16px;
+  color: var(--ink-muted);
+  font-size: 13px;
+  list-style: none;
+}
+.dt-empty-hint.dt-error {
+  color: var(--error);
+}
+.dt-empty-state {
+  text-align: center;
+  padding: 48px 24px;
+  color: var(--ink-muted);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+.dt-empty-state p {
+  font-size: 14px;
+  margin: 0;
+}
+.dt-error {
+  color: var(--error);
+}
+.dt-time {
+  font-size: 11px;
+  color: var(--ink-muted);
+}
+.dt-link {
+  color: var(--accent);
+  font-size: 12px;
+}
+.dt-link:hover {
+  color: var(--accent-hover);
+  text-decoration: underline;
+}
+
+/* ============ 进度条 ============ */
+.dt-progress-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 10px 0;
+}
+.dt-progress-item {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.dt-progress-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--ink-muted);
+}
+.dt-progress-bar {
+  height: 6px;
+  background: var(--bg-hover);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.dt-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--accent-light));
+  border-radius: 999px;
+  transition: width var(--transition);
+}
+
+/* ============ 项目列表 ============ */
+.dt-projects-list {
+  margin-top: 8px;
+}
+
+/* ============ 设定 · 世界观 ============ */
+.dt-wv-list,
+.dt-char-list,
+.dt-volume-list,
+.dt-outline-list,
+.dt-inspiration-list {
+  margin-top: 8px;
+}
+.dt-wv-items {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.dt-wv-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+.dt-wv-item:hover {
+  background: var(--bg-hover);
+}
+.dt-wv-item-active {
+  border-color: var(--accent);
+  background: var(--accent-bg);
+}
+.dt-wv-item-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.dt-wv-cat {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-primary);
+}
+.dt-wv-preview {
+  font-size: 12px;
+  color: var(--ink-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dt-wv-item-actions {
+  display: flex;
+  gap: 6px;
+}
+.dt-editor-host {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  min-height: 160px;
+}
+
+/* ============ 设定 · 角色 ============ */
+.dt-char-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.dt-char-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: 700;
+  font-size: 18px;
+  flex-shrink: 0;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+}
+.dt-card-header .dt-char-avatar {
+  margin-right: 4px;
+}
+.dt-char-identity {
+  font-size: 12px;
+  color: var(--ink-secondary);
+  margin: 0;
+}
+.dt-char-fields {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 12px;
+  font-size: 12px;
+  margin: 0;
+}
+.dt-char-fields dt {
+  color: var(--ink-muted);
+  font-weight: 500;
+}
+.dt-char-fields dd {
+  color: var(--ink-primary);
+  margin: 0;
+}
+
+/* ============ 大纲 · 分卷列表 ============ */
+.dt-volume-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.dt-volume-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  transition: background var(--transition-fast), border-color var(--transition-fast),
+              box-shadow var(--transition-fast);
+}
+.dt-volume-item:hover {
+  background: var(--bg-hover);
+}
+.dt-volume-item.dt-dragging {
+  opacity: 0.5;
+}
+.dt-volume-item.dt-dragover {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-bg);
+}
+.dt-drag-handle {
+  cursor: grab;
+  color: var(--ink-muted);
+  font-size: 16px;
+  user-select: none;
+}
+.dt-drag-handle:active {
+  cursor: grabbing;
+}
+.dt-vol-no {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent);
+  background: var(--accent-bg);
+  padding: 2px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.dt-vol-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.dt-vol-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink-primary);
+}
+.dt-vol-goal {
+  font-size: 12px;
+  color: var(--ink-muted);
+}
+.dt-vol-actions {
+  display: flex;
+  gap: 6px;
+}
+
+/* ============ 大纲 · 章纲列表 ============ */
+.dt-vol-group {
+  margin-bottom: 18px;
+}
+.dt-vol-group-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-secondary);
+  margin: 0 0 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--divider);
+}
+.dt-ch-outline-items {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.dt-ch-outline-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+.dt-ch-outline-item:hover {
+  background: var(--bg-hover);
+  border-color: var(--ink-muted);
+}
+.dt-ch-no {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent);
+  white-space: nowrap;
+}
+.dt-ch-outline-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.dt-ch-outline-title {
+  font-size: 13px;
+  color: var(--ink-primary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.dt-ch-outline-conflict {
+  font-size: 11px;
+  color: var(--ink-muted);
+}
+.dt-ch-outline-actions {
+  display: flex;
+  gap: 6px;
+}
+
+/* ============ 大纲 · 章纲表单（十段模板） ============ */
+.dt-master-fallback {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.7;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-card);
+  color: var(--ink-primary);
+  resize: vertical;
+}
+.dt-outline-section {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  margin: 0 0 14px;
+  background: var(--bg-card);
+}
+.dt-outline-section legend {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-primary);
+  padding: 0 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.dt-section-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+}
+[data-theme="sepia"] .dt-section-num { color: #faf4e6; }
+[data-theme="dark"] .dt-section-num { color: #0a0f1c; }
+.dt-repeatable {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.dt-repeat-item {
+  padding: 10px 12px;
+  background: var(--bg-sidebar);
+  border: 1px solid var(--divider);
+  border-radius: var(--radius);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.dt-tag-input {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 6px;
+  min-height: 36px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.dt-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.dt-filter-label {
+  font-size: 12px;
+  color: var(--ink-muted);
+}
+
+/* ============ 灵感库 ============ */
+.dt-inspiration-card .dt-card-summary {
+  font-size: 12px;
+  color: var(--ink-secondary);
+  line-height: 1.6;
+  margin: 0 0 8px;
+}
