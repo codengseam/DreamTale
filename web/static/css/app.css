@@ -1686,3 +1686,493 @@ select.input:focus {
   line-height: 1.6;
   margin: 0 0 8px;
 }
+
+/* ============================================================
+   作品管理页 · 番茄/起点风格书籍卡片 + 组件样式
+   ============================================================ */
+
+/* 工具栏左侧（标题 + 副标题） */
+.dt-toolbar-left {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  min-width: 0;
+}
+.dt-toolbar-subtitle {
+  font-size: 12px;
+  color: var(--ink-muted);
+  white-space: nowrap;
+}
+@media (max-width: 640px) {
+  .dt-toolbar-subtitle { display: none; }
+}
+
+/* 按钮：次级、幽灵变体 */
+.dt-btn-secondary {
+  background: var(--bg-card);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.dt-btn-secondary:hover {
+  background: var(--accent-bg);
+}
+.dt-btn-ghost {
+  background: transparent;
+  border-color: transparent;
+  color: var(--ink-secondary);
+}
+.dt-btn-ghost:hover {
+  background: var(--bg-hover);
+  color: var(--ink-primary);
+}
+
+/* 统计条 + 搜索 */
+.dt-projects-meta {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 12px 0 16px;
+  margin-bottom: 4px;
+}
+.dt-projects-stats {
+  font-size: 13px;
+  color: var(--ink-secondary);
+}
+.dt-projects-stats strong {
+  color: var(--accent);
+  font-weight: 600;
+  margin: 0 2px;
+}
+.dt-projects-filter {
+  margin-left: auto;
+  flex: 0 1 360px;
+  min-width: 200px;
+}
+.dt-search-input {
+  padding: 8px 14px;
+  font-size: 13px;
+  border-radius: 999px;
+  background: var(--bg-card);
+  transition: all var(--transition-fast);
+}
+.dt-search-input:focus {
+  box-shadow: 0 0 0 3px var(--accent-bg);
+}
+
+/* 作品卡片网格（书籍风格，单列更宽） */
+.dt-project-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(440px, 1fr));
+  gap: 20px;
+}
+@media (max-width: 960px) {
+  .dt-project-cards { grid-template-columns: 1fr; }
+}
+
+/* ============ 书籍卡片（番茄/起点风） ============ */
+.dt-book-card {
+  display: grid !important;
+  grid-template-columns: 128px 1fr;
+  gap: 16px;
+  padding: 16px !important;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  background: var(--bg-card);
+  transition: all var(--transition);
+}
+.dt-book-card:hover {
+  transform: translateY(-3px) !important;
+  box-shadow: 0 10px 28px var(--shadow-lg) !important;
+  border-color: var(--accent) !important;
+}
+.dt-book-card::before {
+  /* 悬浮时的光感 */
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, transparent 60%, var(--accent-bg) 100%);
+  opacity: 0;
+  transition: opacity var(--transition);
+  pointer-events: none;
+}
+.dt-book-card:hover::before {
+  opacity: 1;
+}
+
+/* 封面（左） */
+.dt-book-cover {
+  position: relative;
+  width: 128px;
+  height: 176px;
+  border-radius: 4px 10px 10px 4px;
+  box-shadow:
+    0 4px 12px var(--shadow-lg),
+    inset -4px 0 8px rgba(0, 0, 0, 0.10),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.15);
+  overflow: hidden;
+  flex-shrink: 0;
+  color: #fff;
+  user-select: none;
+  transition: transform var(--transition);
+}
+.dt-book-card:hover .dt-book-cover {
+  transform: scale(1.03) rotate(-1deg);
+}
+/* 书脊阴影线（番茄/起点特有立体感） */
+.dt-book-spine {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 6px;
+  background: linear-gradient(90deg, rgba(0,0,0,0.25), rgba(0,0,0,0) 80%);
+}
+.dt-book-cover-inner {
+  position: absolute;
+  inset: 0;
+  padding: 16px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 10px;
+}
+.dt-book-initial {
+  font-family: var(--font-serif);
+  font-size: 56px;
+  font-weight: 800;
+  line-height: 1;
+  color: #fff;
+  text-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.25),
+    0 0 20px rgba(255, 255, 255, 0.25);
+  letter-spacing: 2px;
+}
+.dt-book-genre {
+  font-size: 11px;
+  padding: 3px 10px;
+  background: rgba(255, 255, 255, 0.22);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 999px;
+  color: #fff;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  margin-top: auto;
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* 封面角标：当前作品 */
+.dt-book-cover .dt-badge-current {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  font-size: 10px;
+  padding: 2px 8px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+  background: #fff;
+  color: var(--accent);
+}
+
+/* 当前作品边框高亮（整张卡片） */
+.dt-card-current {
+  border-color: var(--accent) !important;
+  background: linear-gradient(135deg, var(--bg-card) 0%, var(--accent-bg) 100%);
+  box-shadow: 0 0 0 1px var(--accent) inset, 0 4px 16px var(--accent-bg) !important;
+}
+
+/* 卡片右：信息 */
+.dt-book-body {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 8px;
+  padding: 4px 0;
+  position: relative;
+  z-index: 1;
+}
+.dt-book-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.dt-book-title {
+  font-family: var(--font-serif);
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--ink-primary);
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.dt-book-subtitle {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink-secondary);
+  margin: 0;
+  min-height: 2.5em;
+  /* 2 行截断 */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* 状态标签（彩色） */
+.dt-tag-status {
+  font-weight: 600;
+  padding: 2px 10px;
+  font-size: 11px;
+}
+.dt-tag-status-draft {
+  background: var(--bg-hover);
+  color: var(--ink-muted);
+  border-color: transparent;
+}
+.dt-tag-status-ongoing {
+  background: rgba(237, 108, 2, 0.12);
+  color: var(--warning);
+  border-color: rgba(237, 108, 2, 0.3);
+}
+.dt-tag-status-completed {
+  background: rgba(46, 125, 50, 0.12);
+  color: var(--success);
+  border-color: rgba(46, 125, 50, 0.3);
+}
+.dt-tag-status-paused {
+  background: rgba(2, 136, 209, 0.10);
+  color: var(--info);
+  border-color: rgba(2, 136, 209, 0.3);
+}
+
+/* 元信息行（作者/类型/字数/章节/卷数） */
+.dt-book-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  padding: 6px 0 2px;
+}
+.dt-meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--ink-secondary);
+  line-height: 1.4;
+}
+.dt-meta-item em {
+  font-style: normal;
+  font-size: 13px;
+  opacity: 0.85;
+}
+.dt-meta-item b {
+  font-weight: 500;
+  color: var(--ink-muted);
+  margin-right: 2px;
+}
+
+/* 进度条（大号） */
+.dt-book-progress {
+  margin-top: auto;
+  padding-top: 4px;
+}
+.dt-progress-label-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--ink-muted);
+  margin-bottom: 5px;
+  font-weight: 500;
+}
+.dt-progress-bar-lg {
+  height: 8px;
+}
+.dt-progress-bar-lg .dt-progress-fill {
+  background: linear-gradient(90deg, var(--accent), var(--accent-light));
+  box-shadow: 0 0 8px var(--accent-bg);
+}
+
+/* 卡片底部：更新时间 + 操作按钮 */
+.dt-book-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-top: 8px;
+  margin-top: 4px;
+  border-top: 1px dashed var(--divider);
+}
+.dt-book-footer .dt-time {
+  font-size: 11px;
+  color: var(--ink-muted);
+  white-space: nowrap;
+}
+
+/* ============ 空状态（升级：带插图 + CTA） ============ */
+.dt-empty-state-hero {
+  padding: 64px 24px;
+}
+.dt-empty-illust {
+  width: 100px;
+  height: 100px;
+  border-radius: 32px;
+  background: var(--accent-bg);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 52px;
+  margin-bottom: 20px;
+  animation: dt-empty-bounce 3s ease-in-out infinite;
+}
+@keyframes dt-empty-bounce {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-8px); }
+}
+.dt-empty-state-hero h3 {
+  font-family: var(--font-serif);
+  font-size: 22px;
+  margin: 0 0 8px;
+  color: var(--ink-primary);
+}
+.dt-empty-state-hero p {
+  color: var(--ink-secondary);
+  margin: 0 0 24px;
+  font-size: 14px;
+}
+.dt-empty-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* ============ 新建/编辑 作品 模态框 样式 ============ */
+.dt-project-form {
+  display: grid;
+  grid-template-columns: 180px 1fr;
+  gap: 24px;
+}
+@media (max-width: 720px) {
+  .dt-project-form {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* 封面预览（左列） */
+.dt-form-cover-preview {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  border-radius: 6px 14px 14px 6px;
+  box-shadow:
+    0 10px 30px var(--shadow-lg),
+    inset -6px 0 12px rgba(0, 0, 0, 0.12),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.2);
+  overflow: hidden;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px 14px;
+  text-align: center;
+  gap: 12px;
+  transition: background var(--transition);
+}
+.dt-form-cover-preview::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 8px;
+  background: linear-gradient(90deg, rgba(0,0,0,0.28), rgba(0,0,0,0) 85%);
+}
+.dt-form-cover-initial {
+  position: relative;
+  z-index: 1;
+  font-family: var(--font-serif);
+  font-size: 64px;
+  font-weight: 800;
+  line-height: 1;
+  color: #fff;
+  text-shadow:
+    0 2px 6px rgba(0, 0, 0, 0.25),
+    0 0 28px rgba(255, 255, 255, 0.3);
+  letter-spacing: 3px;
+}
+.dt-form-cover-genre {
+  position: relative;
+  z-index: 1;
+  font-size: 12px;
+  padding: 4px 14px;
+  background: rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 999px;
+  color: #fff;
+  font-weight: 600;
+  margin-top: auto;
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* 表单（右列） */
+.dt-project-form .dt-form {
+  gap: 18px;
+}
+.dt-project-form .dt-form-row label {
+  font-weight: 600;
+  color: var(--ink-primary);
+  font-size: 12.5px;
+}
+.dt-project-form .dt-form-row > input,
+.dt-project-form .dt-form-row > select {
+  padding: 9px 12px;
+  font-size: 13.5px;
+}
+.dt-project-form .dt-hint {
+  margin-top: 3px;
+  opacity: 0.85;
+}
+
+/* 只读/进度输入行 视觉降级 */
+.dt-form-row-readonly input {
+  background: var(--bg-sidebar);
+  border-style: dashed;
+}
+
+/* 删除确认：统计条 */
+.dt-confirm-stats {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 10px 14px;
+  background: var(--bg-sidebar);
+  border-radius: var(--radius);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-secondary);
+}
+
+/* 进度标签行（老的卡片样式兼容：保留） */
+.dt-progress-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--ink-muted);
+}
