@@ -423,3 +423,82 @@ describe('exportVault / importVault 往返', () => {
     expect(await b.listWorldSettings(newId)).toEqual([]);
   });
 });
+
+// ============================================================================
+// 回归测试：projectId 必须是字符串，传 Project 对象必须抛错
+//
+// 背景 bug：features 层 currentProjectId() 误返回整个 Project 对象而非其 id 字符串，
+// 导致复合 key [project_id, vol_no, ch_no] 实际变成 [Project{...}, '01', '001']，
+// 浏览器抛出 "Failed to execute 'put' on 'IDBObjectStore': Evaluating the
+// object store's key path yielded a value that is not a valid key."
+//
+// 此测试锁定存储层契约：即使上层误传对象，存储层也应明确抛错而非静默失败，
+// 让问题在测试阶段就被发现。
+// ============================================================================
+describe('回归：projectId 类型契约（必须为字符串）', () => {
+  it('saveChapter 传 Project 对象作为 projectId 应抛错', async () => {
+    const b = new IndexedDBBackend();
+    const project = new Project({ id: 'p-obj', name: '对象型项目' });
+    await b.saveProject(project);
+
+    const chapter = new Chapter({ vol_no: 1, ch_no: 1, title: '应失败', content: 'X' });
+    // 错误用法：直接传 Project 对象（即原 bug 的复现路径）
+    await expect(b.saveChapter(project, chapter)).rejects.toThrow();
+  });
+
+  it('saveChapter 传普通对象 {id:"x"} 作为 projectId 应抛错', async () => {
+    const b = new IndexedDBBackend();
+    await b.saveProject(new Project({ id: 'p-obj2', name: 'X' }));
+
+    const chapter = new Chapter({ vol_no: 1, ch_no: 1, title: '应失败', content: 'Y' });
+    // 错误用法：传 { id: 'p-obj2' } 而非 'p-obj2'
+    await expect(b.saveChapter({ id: 'p-obj2' }, chapter)).rejects.toThrow();
+  });
+
+  it('saveChapter 传字符串 id 正常工作（正向用例，对比验证）', async () => {
+    const b = new IndexedDBBackend();
+    await b.saveProject(new Project({ id: 'p-str', name: '字符串项目' }));
+
+    const chapter = new Chapter({ vol_no: 1, ch_no: 1, title: '正常', content: 'OK' });
+    await expect(b.saveChapter('p-str', chapter)).resolves.toBeUndefined();
+    const got = await b.getChapter('p-str', 1, 1);
+    expect(got).not.toBeNull();
+    expect(got.title).toBe('正常');
+  });
+
+  it('saveHook 传 Project 对象作为 projectId 应抛错', async () => {
+    const b = new IndexedDBBackend();
+    const project = new Project({ id: 'p-hook', name: 'Hook 项目' });
+    await b.saveProject(project);
+
+    const hook = new Hook({ hook_id: 'H-1', description: 'x', scope: 'core' });
+    await expect(b.saveHook(project, hook)).rejects.toThrow();
+  });
+
+  it('saveVolume 传 Project 对象作为 projectId 应抛错', async () => {
+    const b = new IndexedDBBackend();
+    const project = new Project({ id: 'p-vol', name: '卷项目' });
+    await b.saveProject(project);
+
+    const volume = new Volume({ vol_no: 1, vol_name: '第一卷' });
+    await expect(b.saveVolume(project, volume)).rejects.toThrow();
+  });
+
+  it('saveCharacter 传 Project 对象作为 projectId 应抛错', async () => {
+    const b = new IndexedDBBackend();
+    const project = new Project({ id: 'p-char', name: '角色项目' });
+    await b.saveProject(project);
+
+    const character = new Character({ name: '主角', role: 'protagonist' });
+    await expect(b.saveCharacter(project, character)).rejects.toThrow();
+  });
+
+  it('saveWorldSetting 传 Project 对象作为 projectId 应抛错', async () => {
+    const b = new IndexedDBBackend();
+    const project = new Project({ id: 'p-ws', name: '世界设定项目' });
+    await b.saveProject(project);
+
+    const ws = new WorldSetting({ category: 'core_rules', content: 'x' });
+    await expect(b.saveWorldSetting(project, ws)).rejects.toThrow();
+  });
+});
