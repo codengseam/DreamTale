@@ -400,11 +400,15 @@
     if (!state.storage) { notify('存储后端尚未就绪', 'warning'); return; }
     if (!state.currentProject) { notify('请先选择一个项目', 'warning'); return; }
     notify('正在导出…', 'info');
-    Promise.resolve(state.storage.exportVault(state.currentProject.id)).then(function (blob) {
+    // 确保拿到的是 Project 实例（不是 ID）
+    var proj = state.currentProject;
+    var projId = typeof proj === 'object' && proj ? proj.id : proj;
+    Promise.resolve(state.storage.exportVault(projId)).then(function (blob) {
       var url = URL.createObjectURL(blob);
       var a = document.createElement('a');
       a.href = url;
-      a.download = (state.currentProject.id || 'dreamtale') + '-vault.zip';
+      var safeName = (proj && proj.name ? proj.name.replace(/[\\/:*?"<>|]/g, '_') : (projId || 'dreamtale'));
+      a.download = safeName + '-vault.zip';
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -417,22 +421,152 @@
   }
 
   /**
-   * 从 ZIP 文件导入 Vault
-   * @param {File} file ZIP 文件
+   * 从 ZIP 或 MD 文件导入 Vault
+   * @param {File|FileList} files 单个或多个文件（ZIP/MD 混合）
    */
-  function importVault(file) {
+  function importVault(files) {
     if (!state.storage) { notify('存储后端尚未就绪', 'warning'); return; }
-    if (!file) return;
-    notify('正在导入…', 'info');
-    Promise.resolve(state.storage.importVault(file)).then(function (newId) {
-      notify('导入成功', 'success');
-      // 刷新项目列表
-      return refreshProjects().then(function () {
-        return switchProject(newId);
+    if (!files) return;
+    // 兼容单个 File 或 FileList/数组
+    var fileArr = [];
+    if (files instanceof FileList) {
+      for (var i = 0; i < files.length; i++) fileArr.push(files[i]);
+    } else if (Array.isArray(files)) {
+      fileArr = files;
+    } else if (files instanceof File) {
+      fileArr = [files];
+    }
+    if (!fileArr.length) return;
+
+    notify('正在导入 ' + fileArr.length + ' 个文件…', 'info');
+
+    // 分类：ZIP 走 importVault；MD 作为章节导入到当前项目（无当前项目则新建）
+    var zipFiles = fileArr.filter(function (f) { return /\.zip$/i.test(f.name); });
+    var mdFiles = fileArr.filter(function (f) { return /\.(md|markdown)$/i.test(f.name); });
+
+    var chain = Promise.resolve();
+    var lastImportedId = null;
+
+    // 1. 先处理 ZIP（每个 ZIP 独立成项目）
+    zipFiles.forEach(function (zip) {
+      chain = chain.then(function () {
+        return Promise.resolve(state.storage.importVault(zip)).then(function (newId) {
+          lastImportedId = newId;
+          notify('已导入 ZIP：' + zip.name, 'success');
+        });
       });
+    });
+
+    // 2. 再处理 MD：把所有 md 文件作为章节导入到同一个目标项目
+    if (mdFiles.length > 0) {
+      chain = chain.then(function () {
+        return importMarkdownFiles(mdFiles).then(function (projId) {
+          lastImportedId = projId;
+          notify('已导入 ' + mdFiles.length + ' 个 Markdown 章节', 'success');
+        });
+      });
+    }
+
+    chain.then(function () {
+      if (lastImportedId) {
+        return refreshProjects().then(function () {
+          return switchProject(lastImportedId);
+        });
+      } else {
+        return refreshProjects();
+      }
+    }).then(function () {
+      notify('全部导入完成', 'success');
     }).catch(function (err) {
       console.error('[DreamTale] 导入失败：', err);
       notify('导入失败：' + (err.message || err), 'error');
+    });
+  }
+
+  /**
+   * 把一组 MD 文件作为章节导入到项目（复用当前项目，无则新建）
+   * @param {File[]} mdFiles
+   * @returns {Promise<string>} 项目 id
+   */
+  function importMarkdownFiles(mdFiles) {
+    // 目标项目：有当前项目用当前项目，否则新建
+    var targetProjId = state.currentProject && typeof state.currentProject === 'object'
+      ? state.currentProject.id
+      : (typeof state.currentProject === 'string' ? state.currentProject : null);
+
+    var prepareProj;
+    if (targetProjId) {
+      prepareProj = Promise.resolve(state.storage.getProject(targetProjId));
+    } else {
+      var name = mdFiles[0] && mdFiles[0].name
+        ? mdFiles[0].name.replace(/\.(md|markdown)$/i, '')
+        : '导入的作品';
+      if (!_modules) return Promise.reject(new Error('模块尚未加载'));
+      var Project = _modules.models.Project;
+      var Chapter = _modules.models.Chapter;
+      var now = new Date().toISOString();
+      var proj = new Project({
+        id: 'proj-md-' + Date.now(),
+        name: name,
+        status: 'draft',
+        created_at: now,
+        updated: now
+      });
+      prepareProj = state.storage.saveProject(proj).then(function () { return proj; });
+    }
+
+    return prepareProj.then(function (proj) {
+      // 顺序读取 MD 文件，每一个作为一章（卷 01，章从 1 开始递增）
+      var volNo = '01';
+      var chNo = 1;
+      var chain = Promise.resolve();
+      mdFiles.forEach(function (file) {
+        chain = chain.then(function () {
+          return readFileAsText(file).then(function (text) {
+            if (!_modules) throw new Error('模块尚未加载');
+            var Chapter = _modules.models.Chapter;
+            // 用 chapterFromMarkdown 解析 frontmatter，解析失败就兜底
+            var chapter;
+            try {
+              chapter = _modules.markdown.chapterFromMarkdown(text);
+              // 如解析结果没有 vol_no/ch_no，就按顺序分配
+              if (!chapter.vol_no) chapter.vol_no = volNo;
+              if (!chapter.ch_no) chapter.ch_no = _modules.models.padCh(chNo);
+              // 标题兜底：取文件名
+              if (!chapter.title) chapter.title = file.name.replace(/\.(md|markdown)$/i, '');
+            } catch (e) {
+              chapter = new Chapter({
+                vol_no: volNo,
+                ch_no: _modules.models.padCh(chNo),
+                title: file.name.replace(/\.(md|markdown)$/i, ''),
+                content: text,
+                status: 'draft'
+              });
+            }
+            chapter.vol_no = typeof chapter.vol_no === 'number'
+              ? _modules.models.padVol(chapter.vol_no)
+              : (chapter.vol_no || volNo);
+            chapter.ch_no = typeof chapter.ch_no === 'number'
+              ? _modules.models.padCh(chapter.ch_no)
+              : (chapter.ch_no || _modules.models.padCh(chNo));
+            if (!chapter.status) chapter.status = 'draft';
+            chapter.updated = new Date().toISOString();
+            chNo++;
+            return state.storage.saveChapter(proj.id, chapter);
+          });
+        });
+      });
+      return chain.then(function () { return proj.id; });
+    });
+  }
+
+  /** File → text，小工具 */
+  function readFileAsText(file) {
+    return new Promise(function (resolve, reject) {
+      var reader = new FileReader();
+      reader.onload = function () { resolve(String(reader.result || '')); };
+      reader.onerror = function () { reject(reader.error || new Error('读取文件失败')); };
+      reader.readAsText(file, 'utf-8');
     });
   }
 
@@ -458,8 +592,8 @@
             '<button class="btn btn-secondary btn-lg" id="btn-new-project">新建空白项目</button>' +
           '</div>' +
           '<div class="welcome-extra">' +
-            '<button class="btn btn-ghost btn-sm" id="btn-welcome-import">📂 导入 Vault ZIP</button>' +
-            '<input type="file" id="welcome-import-input" accept=".zip" hidden>' +
+            '<button class="btn btn-ghost btn-sm" id="btn-welcome-import">📂 导入 ZIP / MD</button>' +
+            '<input type="file" id="welcome-import-input" accept=".zip,.md,.markdown,application/zip,text/markdown" multiple hidden>' +
           '</div>' +
         '</div>' +
       '</div>';
@@ -470,7 +604,8 @@
       document.getElementById('welcome-import-input').click();
     });
     document.getElementById('welcome-import-input').addEventListener('change', function (e) {
-      if (e.target.files && e.target.files[0]) importVault(e.target.files[0]);
+      if (e.target.files && e.target.files.length > 0) importVault(e.target.files);
+      e.target.value = '';
     });
   }
 
@@ -673,7 +808,7 @@
     if (importBtn && importInput) {
       importBtn.addEventListener('click', function () { importInput.click(); });
       importInput.addEventListener('change', function (e) {
-        if (e.target.files && e.target.files[0]) importVault(e.target.files[0]);
+        if (e.target.files && e.target.files.length > 0) importVault(e.target.files);
         e.target.value = ''; // 允许重复选择同一文件
       });
     }
