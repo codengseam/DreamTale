@@ -118,6 +118,39 @@
     };
     await DT().storage.saveWorldSetting(pid, payload);
   }
+
+  /**
+   * 批量保存设定项（单事务原子写入）。
+   * items: [{ prefix, key, content }]
+   * 返回合并更新后的 allRaw（供调用方在内存中直接使用，避免 reload）
+   */
+  async function saveKVBatch(pid, items, allRaw) {
+    if (!items || !items.length) return allRaw;
+    // 1. 生成 payload，计算 sort_order
+    let maxSort = allRaw.reduce((m, s) => Math.max(m, s.sort_order || 0), 0);
+    const byCat = new Map(allRaw.map(s => [s.category, s]));
+    const payloads = items.map(it => {
+      const category = `${it.prefix}.${it.key}`;
+      const existing = byCat.get(category);
+      const sort_order = existing ? existing.sort_order : ++maxSort;
+      const content = typeof it.content === 'string' ? it.content : JSON.stringify(it.content);
+      return { category, content, sort_order };
+    });
+    // 2. 调用 storage 批量接口（原子事务）
+    if (typeof DT().storage.saveWorldSettings === 'function') {
+      await DT().storage.saveWorldSettings(pid, payloads);
+    } else {
+      // 降级：逐个保存
+      for (const p of payloads) await DT().storage.saveWorldSetting(pid, p);
+    }
+    // 3. 合并更新到内存 allRaw：同 category 覆盖，新 category 追加
+    const updatedByCat = new Map(allRaw.map(s => [s.category, { ...s }]));
+    for (const p of payloads) updatedByCat.set(p.category, { ...(updatedByCat.get(p.category) || {}), ...p });
+    const merged = [...updatedByCat.values()];
+    merged.sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+    return merged;
+  }
+
   async function saveRelations(pid, edges) {
     await DT().storage.saveWorldSetting(pid, {
       category: 'relations.graph',
@@ -354,25 +387,55 @@
     });
     const panel = document.createElement('div');
     panel.className = 'dt-subpanel';
+    // 每个 tab 的子 panel 容器：第一次 render 后保留，后续只切换 display
+    const subPanels = new Map();
     wrap.appendChild(tabbar); wrap.appendChild(panel);
     root.appendChild(wrap);
 
     let cur = tabDefs[0].key;
-    function switchTo(k) {
+    async function switchTo(k) {
       cur = k;
       tabbar.querySelectorAll('.dt-subtab').forEach(b => {
         b.classList.toggle('active', b.dataset.tab === k);
       });
-      const def = tabDefs.find(t => t.key === k);
-      panel.innerHTML = '';
-      if (def && def.render) def.render(panel);
+      // 隐藏所有已存在的子 panel
+      subPanels.forEach(el => { el.style.display = 'none'; });
+      // 若该 tab 第一次进入，创建 panel 并 render
+      let targetEl = subPanels.get(k);
+      if (!targetEl) {
+        targetEl = document.createElement('div');
+        targetEl.className = 'dt-subpanel-inner';
+        targetEl.dataset.tab = k;
+        targetEl.style.display = '';
+        panel.appendChild(targetEl);
+        subPanels.set(k, targetEl);
+        const def = tabDefs.find(t => t.key === k);
+        if (def && def.render) {
+          try {
+            await def.render(targetEl);
+          } catch (e) {
+            console.error('[settings] subTab render 失败:', k, e);
+            targetEl.innerHTML = `<p class="dt-empty-hint dt-error">加载失败：${esc(e.message || e)}</p>`;
+          }
+        }
+      } else {
+        targetEl.style.display = '';
+      }
       onChange && onChange(k);
     }
     tabbar.querySelectorAll('.dt-subtab').forEach(b => {
       b.addEventListener('click', () => switchTo(b.dataset.tab));
     });
+    // 先创建首 tab panel（异步）
     switchTo(cur);
-    return { get: () => cur, switchTo };
+    return {
+      get: () => cur,
+      switchTo,
+      /** 获取指定 tab 的子 panel DOM（用于保存时遍历 editor 值） */
+      getPanel: (k) => subPanels.get(k),
+      /** 获取全部已渲染 tab 的子 panel Map */
+      allPanels: () => subPanels,
+    };
   }
 
   function createMarkdownEditor(container, initialValue, theme) {
@@ -393,8 +456,15 @@
   }
 
   // 通用维度编辑页外壳（6维度模块通用）
+  // opts 新增字段（用于「保存当前Tab = 保存整个模块所有子Tab」）：
+  //   - prefix:      模块前缀 (worldview / power / plot / misc)
+  //   - tabKey:      当前子Tab的 key (era / geography / ...)
+  //   - allTabs:     模块下所有子Tab定义 [{key,placeholder,...}]
+  //   - getTabCtrl:  取 createSubTabs 返回的控制器（用于获取其他Tab panel）
+  //   - state:       渲染级 state（含 allRaw/grouped/characters）
+  //   - pid:         当前项目 id
+  //   - afterBatchSave(mergedAllRaw): 批量保存成功后的钩子，用于同步 state.allRaw + grouped + 重算进度
   function makeDimensionEditor(opts) {
-    // opts: { title, placeholder, tip, getCurrent(), onSave(text), reload }
     return async (panel) => {
       panel.innerHTML = `
         <div class="dt-dim-head">
@@ -409,14 +479,73 @@
         <div class="dt-dim-editor" data-host></div>`;
       const host = panel.querySelector('[data-host]');
       const editor = createMarkdownEditor(host, opts.getCurrent() || opts.placeholder || '', DT().state.theme);
+      // 把 editor 挂到 panel 上，供其他 tab 批量保存时遍历取值
+      panel._editor = editor;
+      panel._tabKey = opts.tabKey;
+
       let savePending = false;
       panel.querySelector('[data-act="save"]').addEventListener('click', async () => {
         if (savePending) return;
         savePending = true;
         try {
-          await opts.onSave(editor.getValue());
-          DT().notify('已保存', 'success');
-          await opts.reload();
+          // ====== 批量保存：当前模块的所有子Tab ======
+          const prefix = opts.prefix;
+          const allTabs = opts.allTabs || [];
+          const tabCtrl = (typeof opts.getTabCtrl === 'function') ? opts.getTabCtrl() : null;
+          const pid = opts.pid;
+          const state = opts.state;
+
+          // 1) 收集所有子Tab的值：
+          //    - 如果该Tab已被打开过（已渲染 & 有editor实例）：从 panel._editor 取 getValue()（即使用户没动）
+          //    - 如果该Tab从未被打开过：跳过（避免把空占位符或数据库无值情况写空 category）
+          const items = [];
+          for (const t of allTabs) {
+            let content = '';
+            let hasEditor = false;
+            const subPanel = tabCtrl ? tabCtrl.getPanel(t.key) : null;
+            if (subPanel && subPanel._editor && typeof subPanel._editor.getValue === 'function') {
+              content = subPanel._editor.getValue();
+              hasEditor = true;
+            }
+            // ★ 关键过滤规则（避免写入噪音/空 category）：
+            // 情况 A：该 tab 被打开过（存在 editor 实例）
+            if (hasEditor) {
+              const dbHasValue = !!(state.grouped && state.grouped[prefix] && state.grouped[prefix][t.key]);
+              // ① 如果数据库已经有值：始终保存（用户可能选择清空内容）
+              // ② 如果数据库没值 且 内容等于 placeholder（没编辑过）：跳过
+              // ③ 如果数据库没值 且 内容不等于placeholder（编辑过了）：保存
+              if (!dbHasValue && content === (t.placeholder || '')) {
+                continue; // 没编辑过且没旧值 → 不入库
+              }
+              if (!dbHasValue && content === '') {
+                continue; // 编辑器打开了但全删了且数据库无值 → 也不入库造噪音
+              }
+              items.push({ prefix, key: t.key, content });
+            }
+            // 情况 B：该 tab 从未被打开过 → 直接跳过（不写空 category）
+          }
+
+          // 2) 如果用户点保存时，当前模块下连一个有效值都没有（全是初始placeholder没动过），
+          //    至少把当前Tab的值落库，避免白忙活
+          if (!items.length) {
+            items.push({ prefix, key: opts.tabKey, content: editor.getValue() });
+          }
+
+          // 3) 调用批量保存（单事务原子写入）
+          const mergedAllRaw = await saveKVBatch(pid, items, state.allRaw);
+
+          // 4) 同步内存 state（进度会立刻反映，不用 reload 整个视图）
+          if (state) {
+            state.allRaw = mergedAllRaw;
+            state.grouped = groupSettings(mergedAllRaw);
+          }
+          if (typeof opts.afterBatchSave === 'function') {
+            await opts.afterBatchSave(mergedAllRaw);
+          }
+
+          const savedCount = items.length;
+          DT().notify(savedCount > 1 ? `已保存 ${savedCount} 个子项` : '已保存', 'success');
+          if (typeof opts.reload === 'function') await opts.reload();
         } finally { savePending = false; }
       });
     };
@@ -426,6 +555,7 @@
   // View 2：世界观（6维度）
   // ==================================================
   function renderWorldView(root, state, reload, pid) {
+    const prefix = 'worldview';
     const dims = [
       { key:'era',         icon:'📜', name:'时代与背景',
         tip:'古代/现代/未来/架空？有没有真实历史原型？核心差异点：和现实世界最大的不同是什么？',
@@ -446,15 +576,23 @@
         tip:'这个世界的「天花板」在哪？最强者是什么状态？',
         placeholder: `# 超凡水平（世界天花板）\n\n## 境界上限\n最高「渡劫期」，但「飞升成仙」是上古神话，无人成功。传言渡劫成功者都会「神秘失踪」，实为天道封印吞噬。\n\n## 战力极值\n- 化神期大能：可一击摧城，寿命 3000 年\n- 渡劫期传说：改写地域天象，寿命近乎无限\n\n## 超凡 vs 科技\n纯修真世界，无现代科技。但「传音符」等同电话、「储物袋」等同空间装备。\n\n## 关键铁则（不可打破）\n- 不可成仙：天道封印未破，无人可飞升\n- 剑修破境必须以剑意印证，比常人难 3 倍但可越阶挑战\n- 残剑「问渊」是唯一能接触到封印的载体` },
     ];
+    // 给每个子Tab附上 _getCurrent（未打开过的Tab批量保存时用数据库已有值）
+    dims.forEach(d => {
+      d._getCurrent = () => (state.grouped[prefix] && state.grouped[prefix][d.key]) ? state.grouped[prefix][d.key].content : '';
+    });
+    // tabCtrl 占位：解决「tabDefs 依赖 tabCtrl」和「createSubTabs 依赖 tabDefs」的循环引用
+    const tabCtrlHolder = { ctrl: null };
     const tabDefs = dims.map(d => ({
       key: d.key, icon: d.icon, name: d.name,
       render: makeDimensionEditor({
         title: `${d.icon} ${d.name}`,
         tip: d.tip,
         placeholder: d.placeholder,
-        getCurrent: () => state.grouped.worldview[d.key] ? state.grouped.worldview[d.key].content : '',
-        reload,
-        onSave: async (text) => { await saveKV(pid, 'worldview', d.key, text, state.allRaw); },
+        getCurrent: d._getCurrent,
+        prefix, tabKey: d.key,
+        allTabs: dims,
+        getTabCtrl: () => tabCtrlHolder.ctrl,
+        state, pid, reload,
       }),
     }));
     // 加上「原始设定」tab 兼容旧数据
@@ -474,13 +612,14 @@
         },
       });
     }
-    createSubTabs(root, tabDefs);
+    tabCtrlHolder.ctrl = createSubTabs(root, tabDefs);
   }
 
   // ==================================================
   // View 3：力量体系（6子Tab）
   // ==================================================
   function renderPower(root, state, reload, pid) {
+    const prefix = 'power';
     const subs = [
       { key:'levels',    icon:'📊', name:'等级划分',
         tip:'修炼/升级分几个大境界？每个境界有什么「质变」？升级感必须可感知',
@@ -501,17 +640,22 @@
         tip:'法宝/丹药/阵法的品级与规则，读者关心的「装备系统」',
         placeholder: `# 物品 / 装备体系\n\n## 法宝品阶\n凡器 → 灵器（上中下）→ 灵宝 → 玄宝 → 天宝 → 古宝（道器）\n| 品阶 | 举例 | 威能 |\n|------|------|------|\n| 灵器 | 制式佩剑 | 灌注灵力可削铁如泥 |\n| 灵宝 | 本命剑 | 心神相连，剑心通明 |\n| 天宝 | 问渊残剑 | 承载法则碎片 |\n| 古宝 | 完整问渊剑 | 可劈开封印（传说） |\n\n## 丹药品阶\n下品 → 中品 → 上品 → 极品 → 仙丹（无人能炼）\n- 同品丹：丹师品级 ≥ 丹药品阶才能炼制\n\n## 核心物品清单（关键剧情道具）\n1. 残剑问渊（金手指）— 卷1剑冢出土\n2. 沉璧剑骨（第3截）— 卷3渊海核心\n3. 阿箩的九尾尾羽（信物）— 可解一次残剑反噬\n4. 神祇故土封印碎片 — 卷4入口钥匙\n5. 无相面具（裴矩的信物）— 伏笔：与主角母亲遗物同款` },
     ];
+    subs.forEach(s => {
+      s._getCurrent = () => (state.grouped[prefix] && state.grouped[prefix][s.key]) ? state.grouped[prefix][s.key].content : '';
+    });
+    const tabCtrlHolder = { ctrl: null };
     const tabDefs = subs.map(s => ({
       key: s.key, icon: s.icon, name: s.name,
       render: makeDimensionEditor({
         title: `${s.icon} ${s.name}`,
         tip: s.tip, placeholder: s.placeholder,
-        getCurrent: () => state.grouped.power[s.key] ? state.grouped.power[s.key].content : '',
-        reload,
-        onSave: async (text) => { await saveKV(pid, 'power', s.key, text, state.allRaw); },
+        getCurrent: s._getCurrent,
+        prefix, tabKey: s.key, allTabs: subs,
+        getTabCtrl: () => tabCtrlHolder.ctrl,
+        state, pid, reload,
       }),
     }));
-    createSubTabs(root, tabDefs);
+    tabCtrlHolder.ctrl = createSubTabs(root, tabDefs);
   }
 
   // ==================================================
@@ -1272,6 +1416,7 @@
   // View 6：剧情结构
   // ==================================================
   function renderPlot(root, state, reload, pid) {
+    const prefix = 'plot';
     const subs = [
       { key:'mainline', icon:'🎯', name:'主线一句话',
         tip:'电梯测试：30 秒说清楚这部小说讲了什么故事',
@@ -1289,22 +1434,28 @@
         tip:'丰富世界观、丰满配角，但不能喧宾夺主',
         placeholder: `# 支线列表\n\n## 支线设计三原则\n1. 每条支线必须**服务主线**（要么丰满配角动机，要么补充世界观规则，要么为主线埋伏笔）\n2. 单支线长度 ≤ 10 章\n3. 支线结束必须**回馈主线**（主角获得能力/信息/人脉/代价）\n\n## 已规划支线\n| 编号 | 支线名 | 主角团成员 | 章数 | 回馈主线 |\n|------|--------|------------|------|----------|\n| S-01 | 阿箩寻亲 | 阿箩视角 | 6（卷二） | 阿箩九尾血脉初步觉醒 |\n| S-02 | 海族祭司之托 | 沈砚+阿箩 | 5（卷三初） | 获得渊海地图 + 沉璧位置线索 |\n| S-03 | 云栖下山历练 | 云栖单线 | 8（卷二中） | 揭示其父亲与无相门的关联（卷四决裂铺垫） |\n| S-04 | 散修集市淘宝 | 沈砚+海族小队长 | 4（卷三前） | 淘到母亲遗物铜簪的同款碎片（H-008 加深） |\n\n## 被砍掉的废案（记录避免重复走坑）\n- ❌ 青云宗内斗 20 章大支线：与卷一「辞山」目标冲突，压缩为 5 章内斗 + 赶走` },
     ];
+    subs.forEach(s => {
+      s._getCurrent = () => (state.grouped[prefix] && state.grouped[prefix][s.key]) ? state.grouped[prefix][s.key].content : '';
+    });
+    const tabCtrlHolder = { ctrl: null };
     const tabDefs = subs.map(s => ({
       key: s.key, icon: s.icon, name: s.name,
       render: makeDimensionEditor({
         title: `${s.icon} ${s.name}`, tip: s.tip, placeholder: s.placeholder,
-        getCurrent: () => state.grouped.plot[s.key] ? state.grouped.plot[s.key].content : '',
-        reload,
-        onSave: async (text) => { await saveKV(pid, 'plot', s.key, text, state.allRaw); },
+        getCurrent: s._getCurrent,
+        prefix, tabKey: s.key, allTabs: subs,
+        getTabCtrl: () => tabCtrlHolder.ctrl,
+        state, pid, reload,
       }),
     }));
-    createSubTabs(root, tabDefs);
+    tabCtrlHolder.ctrl = createSubTabs(root, tabDefs);
   }
 
   // ==================================================
   // View 7：杂项
   // ==================================================
   function renderMisc(root, state, reload, pid) {
+    const prefix = 'misc';
     const subs = [
       { key:'timeline', icon:'📅', name:'大事年表 / 时间线',
         tip:'历史事件 + 故事内时间，避免前后矛盾。卷三发生在故事内第几春？',
@@ -1316,16 +1467,21 @@
         tip:'热血？暗黑？搞笑？种田？基调决定一切设定的「味道」',
         placeholder: `# 基调与风格\n\n## 一句话风格\n东方玄幻 · 燃向 · 偏黑暗底色+热血内核 · 情感细腻 · 代价感强烈\n\n## 风格光谱定位\n| 维度 | 选择（两端取中间位置请打勾） | 说明 |\n|------|------------------------------|------|\n| 主色调 | ■ 冷色系（深蓝/暗金）/□ 暖色系 | 配合「剑」的锋利感 + 代价的沉重感 |\n| 搞笑度 | □ 高 /□ 中 / ■ 低 | 正剧风，偶尔用配角冷幽默调节 |\n| 虐度 | □ 无虐 / ■ 中虐（有代价有失去）/□ 高虐 | 每次变强都要失去，虐是爽的前提 |\n| 爽度密度 | □ 爽文快餐 / ■ 爽压交织 /□ 慢热 | 爽→压→爽 循环 |\n| 感情线占比 | □ 无女主 / ■ 20% 情感线 /□ 50% | 情感线 = 互相救赎，不拖主线 |\n| 世界观深度 | □ 背景板 / ■ 深层隐喻 /□ 哲学向 | 天道封印=被操控的命运 |\n\n## 文风 / 语言指纹约束（作者声音）\n- 禁用：「嘴角微微上扬」「眼中闪过一丝」等 AI 常用句式（check_ai_novel.py 会检测）\n- 偏好：短句 + 留白（打斗快、情感慢）\n- 战斗描写：镜头切（环境→兵器→人→眼神→一刀结束）\n- 情感描写：心理描写 ≠ 直白独白，用生理反应（握拳/指节发白/呼吸停顿）映射\n\n## 封面 / 标题风格\n- 书名：问剑长歌（4 字 · 动词+意象）\n- 卷名：ABAB 结构（锋未鸣、渡寒江、渊海沉璧、神祇故土、问剑长歌）\n- 章名：2-5 字 · 名词/意象型（寒江尽头、无相追杀、沉璧传说）\n\n## 对标作品（口味锚点）\n- 《剑来》：文气+道理型打斗 × 我们的爽度更密\n- 《诡秘之主》：代价金手指+世界观真相揭露 √ 我们也是代价驱动\n- 《斗破苍穹》：退婚流爽文模板 × 我们虐度更低，代价更真实\n- 《道诡异仙》：疯狂感 × 我们底色温暖，代价但不绝望` },
     ];
+    subs.forEach(s => {
+      s._getCurrent = () => (state.grouped[prefix] && state.grouped[prefix][s.key]) ? state.grouped[prefix][s.key].content : '';
+    });
+    const tabCtrlHolder = { ctrl: null };
     const tabDefs = subs.map(s => ({
       key: s.key, icon: s.icon, name: s.name,
       render: makeDimensionEditor({
         title: `${s.icon} ${s.name}`, tip: s.tip, placeholder: s.placeholder,
-        getCurrent: () => state.grouped.misc[s.key] ? state.grouped.misc[s.key].content : '',
-        reload,
-        onSave: async (text) => { await saveKV(pid, 'misc', s.key, text, state.allRaw); },
+        getCurrent: s._getCurrent,
+        prefix, tabKey: s.key, allTabs: subs,
+        getTabCtrl: () => tabCtrlHolder.ctrl,
+        state, pid, reload,
       }),
     }));
-    createSubTabs(root, tabDefs);
+    tabCtrlHolder.ctrl = createSubTabs(root, tabDefs);
   }
 
   // ---------- 导出 ----------

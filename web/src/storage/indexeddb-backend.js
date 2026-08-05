@@ -266,6 +266,24 @@ export class IndexedDBBackend extends IStorageBackend {
     await reqToPromise(tx(db, STORE_CHARACTERS, 'readwrite').put(data));
   }
 
+  /** 批量保存角色（单事务原子写入） */
+  async saveCharacters(projectId, characters) {
+    if (!characters || !characters.length) return;
+    const db = await this._db();
+    const transaction = db.transaction(STORE_CHARACTERS, 'readwrite');
+    const store = transaction.objectStore(STORE_CHARACTERS);
+    for (const character of characters) {
+      const c = character instanceof Character ? character : new Character(character);
+      const data = { ...c.toJSON(), project_id: projectId };
+      store.put(data);
+    }
+    return new Promise((resolve, reject) => {
+      transaction.oncomplete = () => resolve();
+      transaction.onerror = () => reject(transaction.error);
+      transaction.onabort = () => reject(transaction.error || new Error('批量保存角色被中止'));
+    });
+  }
+
   // ---------- 世界设定 ----------
 
   async listWorldSettings(projectId) {
@@ -279,6 +297,24 @@ export class IndexedDBBackend extends IStorageBackend {
     const w = setting instanceof WorldSetting ? setting : new WorldSetting(setting);
     const data = { ...w.toJSON(), project_id: projectId };
     await reqToPromise(tx(db, STORE_WORLD_SETTINGS, 'readwrite').put(data));
+  }
+
+  /** 批量保存世界设定（单事务原子写入） */
+  async saveWorldSettings(projectId, settings) {
+    if (!settings || !settings.length) return;
+    const db = await this._db();
+    const transaction = db.transaction(STORE_WORLD_SETTINGS, 'readwrite');
+    const store = transaction.objectStore(STORE_WORLD_SETTINGS);
+    for (const setting of settings) {
+      const w = setting instanceof WorldSetting ? setting : new WorldSetting(setting);
+      const data = { ...w.toJSON(), project_id: projectId };
+      store.put(data);
+    }
+    return new Promise((resolve, reject) => {
+      transaction.oncomplete = () => resolve();
+      transaction.onerror = () => reject(transaction.error);
+      transaction.onabort = () => reject(transaction.error || new Error('批量保存设定被中止'));
+    });
   }
 
   // ---------- 导入导出 ----------

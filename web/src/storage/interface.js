@@ -98,6 +98,15 @@ export class IStorageBackend {
     throw new NotSupportedError(`${this.name}: saveCharacter 未实现`);
   }
 
+  /** 批量保存角色（原子事务） */
+  async saveCharacters(_projectId, _characters) {
+    // 默认降级：逐个调用单条 save；子类可 override 为原子事务
+    if (!_characters || !_characters.length) return;
+    for (const c of _characters) {
+      await this.saveCharacter(_projectId, c);
+    }
+  }
+
   // ---------- 世界设定 ----------
 
   /** 列出某项目所有世界设定 */
@@ -108,6 +117,15 @@ export class IStorageBackend {
   /** 保存世界设定 */
   async saveWorldSetting(_projectId, _setting) {
     throw new NotSupportedError(`${this.name}: saveWorldSetting 未实现`);
+  }
+
+  /** 批量保存世界设定（原子事务；同 category 覆盖，不同 category 新增） */
+  async saveWorldSettings(_projectId, _settings) {
+    // 默认降级：逐个调用单条 save；子类可 override 为原子事务
+    if (!_settings || !_settings.length) return;
+    for (const s of _settings) {
+      await this.saveWorldSetting(_projectId, s);
+    }
   }
 
   // ---------- 导入导出 ----------
