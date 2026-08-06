@@ -172,65 +172,171 @@ HOOKS: List[Dict[str, Any]] = [
         "id": "H-001",
         "title": "残剑「问渊」的来历",
         "status": "已回收",
-        "planted_ch": "第 1 章",
+        "status_key": "resolved",
+        "planted_ch": 1,
+        "planted_ch_text": "第 1 章",
+        "target_ch": 65,
         "recycle_ch": "第 65 章",
         "priority": "P0",
+        "priority_key": "high",
+        "scope": "core",
+        "scope_label": "大主线",
+        "payoff": "reveal",
+        "payoff_label": "真相揭示",
         "note": "剑骨来自上古剑尊，与卷四神祇故土呼应。",
     },
     {
         "id": "H-002",
         "title": "沈砚身世之谜",
         "status": "已埋设",
-        "planted_ch": "第 3 章",
+        "status_key": "planted",
+        "planted_ch": 3,
+        "planted_ch_text": "第 3 章",
+        "target_ch": 130,
         "recycle_ch": "—",
         "priority": "P0",
+        "priority_key": "high",
+        "scope": "core",
+        "scope_label": "大主线",
+        "payoff": "twist",
+        "payoff_label": "剧情反转",
         "note": "母亲身份成谜，预计卷四揭穿。",
     },
     {
         "id": "H-003",
         "title": "阿箩的妖族血脉",
         "status": "半回收",
-        "planted_ch": "第 35 章",
+        "status_key": "hinted",
+        "planted_ch": 35,
+        "planted_ch_text": "第 35 章",
+        "target_ch": 70,
         "recycle_ch": "第 70 章",
         "priority": "P1",
+        "priority_key": "medium",
+        "scope": "long",
+        "scope_label": "大主线",
+        "payoff": "emotional",
+        "payoff_label": "情感冲击",
         "note": "血脉来源尚未明确，预计卷三末揭晓。",
     },
     {
         "id": "H-004",
         "title": "无相门灭门之仇",
         "status": "已埋设",
-        "planted_ch": "第 28 章",
+        "status_key": "planted",
+        "planted_ch": 28,
+        "planted_ch_text": "第 28 章",
+        "target_ch": 150,
         "recycle_ch": "—",
         "priority": "P0",
+        "priority_key": "high",
+        "scope": "core",
+        "scope_label": "大主线",
+        "payoff": "twist",
+        "payoff_label": "剧情反转",
         "note": "与剑尊因果相关，主线大反派。",
     },
     {
         "id": "H-005",
         "title": "神祇故土的封印",
         "status": "已埋设",
-        "planted_ch": "第 42 章",
+        "status_key": "planted",
+        "planted_ch": 42,
+        "planted_ch_text": "第 42 章",
+        "target_ch": 81,
         "recycle_ch": "—",
         "priority": "P0",
+        "priority_key": "high",
+        "scope": "long",
+        "scope_label": "大主线",
+        "payoff": "powerup",
+        "payoff_label": "能力解锁",
         "note": "卷四入口伏笔。",
     },
     {
         "id": "H-006",
         "title": "剑尊残识的真正目的",
         "status": "已埋设",
-        "planted_ch": "第 80 章",
+        "status_key": "planted",
+        "planted_ch": 80,
+        "planted_ch_text": "第 80 章",
+        "target_ch": 200,
         "recycle_ch": "—",
         "priority": "P0",
+        "priority_key": "high",
+        "scope": "core",
+        "scope_label": "大主线",
+        "payoff": "twist",
+        "payoff_label": "剧情反转",
         "note": "卷五最终决战的引子。",
     },
     {
         "id": "H-007",
         "title": "寒江底沉剑",
         "status": "已回收",
-        "planted_ch": "第 23 章",
+        "status_key": "resolved",
+        "planted_ch": 23,
+        "planted_ch_text": "第 23 章",
+        "target_ch": 41,
         "recycle_ch": "第 41 章",
-        "recycle_ch_text": "第 41 章",
         "priority": "P2",
+        "priority_key": "low",
+        "scope": "short",
+        "scope_label": "支线",
+        "payoff": "powerup",
+        "payoff_label": "能力解锁",
         "note": "伏笔铺垫较短，回收自然。",
+    },
+    {
+        "id": "H-008",
+        "title": "青云宗外门长老的私心",
+        "status": "已埋设",
+        "status_key": "planted",
+        "planted_ch": 4,
+        "planted_ch_text": "第 4 章",
+        "target_ch": 15,
+        "recycle_ch": "—",
+        "priority": "P2",
+        "priority_key": "low",
+        "scope": "short",
+        "scope_label": "支线",
+        "payoff": "callback",
+        "payoff_label": "回扣前文",
+        "note": "小反派支线，用于立威打脸。",
+    },
+    {
+        "id": "H-009",
+        "title": "阿箩随身携带的狐玉佩",
+        "status": "回收中",
+        "status_key": "hinted",
+        "planted_ch": 36,
+        "planted_ch_text": "第 36 章",
+        "target_ch": 60,
+        "recycle_ch": "—",
+        "priority": "P1",
+        "priority_key": "medium",
+        "scope": "short",
+        "scope_label": "支线",
+        "payoff": "emotional",
+        "payoff_label": "情感冲击",
+        "note": "玉佩是海族信物，关联阿箩身世。",
+    },
+    {
+        "id": "H-010",
+        "title": "白鲨舟少主的盟约",
+        "status": "已埋设",
+        "status_key": "planted",
+        "planted_ch": 44,
+        "planted_ch_text": "第 44 章",
+        "target_ch": 55,
+        "recycle_ch": "—",
+        "priority": "P1",
+        "priority_key": "medium",
+        "scope": "short",
+        "scope_label": "支线",
+        "payoff": "callback",
+        "payoff_label": "回扣前文",
+        "note": "卷三海族势力交锋的关键盟友。",
     },
 ]
 
@@ -697,53 +803,462 @@ def render_outline() -> None:
 
 
 def render_hooks() -> None:
-    gr.HTML('<div class="dt-section-title">🪝 埋坑点 · 伏笔登记表</div>')
-    # 汇总
-    total = len(HOOKS)
-    done = sum(1 for h in HOOKS if h["status"] == "已回收")
-    half = sum(1 for h in HOOKS if h["status"] == "半回收")
-    pending = total - done - half
+    """伏笔管理台 · 番茄/起点读书风格：大主线 + 支线双维度卡片展示。"""
+    current_ch = PROJECT["chapters_done"]  # 当前已写到第 42 章
+
+    # ========== 辅助函数 ==========
+    def is_mainline(h: Dict) -> bool:
+        return h["scope"] in ("core", "long")
+
+    def status_ex(h: Dict) -> Dict[str, bool]:
+        if h["status_key"] in ("resolved", "abandoned"):
+            return {"overdue": False, "soon": False}
+        target = int(h.get("target_ch") or 0)
+        if not target:
+            return {"overdue": False, "soon": False}
+        diff = target - current_ch
+        return {
+            "overdue": current_ch > target,
+            "soon": -3 <= diff <= 3 and current_ch <= target,
+        }
+
+    def priority_badge(h: Dict) -> str:
+        pk = h.get("priority_key") or "medium"
+        if pk == "high":
+            return '<span class="fq-pri fq-pri-high">P0 · 高</span>'
+        if pk == "medium":
+            return '<span class="fq-pri fq-pri-mid">P1 · 中</span>'
+        return '<span class="fq-pri fq-pri-low">P2 · 低</span>'
+
+    def payoff_badge(h: Dict) -> str:
+        color_map = {
+            "reveal": "background:rgba(139,92,246,.1);color:#8b5cf6;border-color:rgba(139,92,246,.3);",
+            "twist": "background:rgba(236,72,153,.1);color:#ec4899;border-color:rgba(236,72,153,.3);",
+            "powerup": "background:rgba(34,197,94,.1);color:#22c55e;border-color:rgba(34,197,94,.3);",
+            "emotional": "background:rgba(249,115,22,.1);color:#f97316;border-color:rgba(249,115,22,.3);",
+            "callback": "background:rgba(14,165,233,.1);color:#0ea5e9;border-color:rgba(14,165,233,.3);",
+        }
+        style = color_map.get(h.get("payoff") or "reveal", "")
+        label = h.get("payoff_label") or "揭示"
+        return f'<span class="fq-badge fq-badge-payoff" style="{style}">{label}</span>'
+
+    def status_chip(h: Dict) -> str:
+        sk = h.get("status_key") or "planted"
+        style_map = {
+            "planted": "background:rgba(59,130,246,.12);color:#3b82f6;border-color:rgba(59,130,246,.35);",
+            "hinted": "background:rgba(249,115,22,.12);color:#f97316;border-color:rgba(249,115,22,.35);",
+            "resolved": "background:rgba(59,179,111,.12);color:#3bb36f;border-color:rgba(59,179,111,.35);",
+            "abandoned": "background:rgba(148,163,184,.12);color:#94a3b8;border-color:rgba(148,163,184,.35);",
+        }
+        label_map = {
+            "planted": "已埋下",
+            "hinted": "回收中",
+            "resolved": "已埋坑",
+            "abandoned": "已废弃",
+        }
+        style = style_map.get(sk, style_map["planted"])
+        label = label_map.get(sk, "已埋下")
+        return f'<span class="fq-status-chip" style="{style}">{label}</span>'
+
+    def hook_card(h: Dict, line_type: str) -> str:
+        ex = status_ex(h)
+        resolved = h["status_key"] == "resolved"
+        abandoned = h["status_key"] == "abandoned"
+        line_cls = "fq-card-mainline" if line_type == "main" else "fq-card-sideline"
+        accent_color = (
+            "background:linear-gradient(180deg,#e0a93b,#b37a1f);"
+            if line_type == "main"
+            else "background:linear-gradient(180deg,#3b82f6,#2563eb);"
+        )
+        extra_cls = ""
+        urgent_badge = ""
+        if ex["overdue"]:
+            extra_cls = "fq-card-overdue"
+            accent_color = "background:#ef4444;"
+            urgent_badge = '<span class="fq-badge fq-badge-overdue">🚨 超期</span>'
+        elif ex["soon"]:
+            extra_cls = "fq-card-soon"
+            urgent_badge = '<span class="fq-badge fq-badge-soon">⏱ 临近</span>'
+        if resolved:
+            extra_cls += " fq-card-resolved"
+            accent_color = "background:#3bb36f;"
+        elif abandoned:
+            extra_cls += " fq-card-abandoned"
+            accent_color = "background:#94a3b8;"
+
+        # 埋坑按钮
+        if resolved:
+            action_btn = '<button class="fq-card-action fq-action-done" disabled>✓ 已埋坑</button>'
+        elif abandoned:
+            action_btn = '<button class="fq-card-action fq-action-revive">↺ 恢复</button>'
+        else:
+            action_btn = '<button class="fq-card-action fq-action-resolve">⚰️ 埋坑</button>'
+
+        target_overdue = 'fq-meta-overdue' if ex['overdue'] else ''
+
+        return f"""
+        <div class="fq-hook-card {line_cls} {extra_cls}">
+          <div class="fq-card-accent" style="{accent_color}"></div>
+          <div class="fq-card-main">
+            <div class="fq-card-top">
+              <div class="fq-card-id"><code>{h['id']}</code></div>
+              <div class="fq-card-statuses">
+                {urgent_badge}
+                {status_chip(h)}
+              </div>
+            </div>
+            <div class="fq-card-desc" title="{h['title']} — {h['note']}">
+              <b style="color:var(--ink-primary);">{h['title']}</b>
+              <div style="font-size:12.5px;color:var(--ink-secondary);margin-top:4px;line-height:1.6;">{h['note']}</div>
+            </div>
+            <div class="fq-card-meta">
+              <div class="fq-meta-item" title="埋设章">
+                <span class="fq-meta-icon">📥</span>
+                <span>第 {h['planted_ch']} 章埋下</span>
+              </div>
+              <div class="fq-meta-item {target_overdue}" title="目标回收章">
+                <span class="fq-meta-icon">🎯</span>
+                <span>目标第 {h['target_ch']} 章</span>
+              </div>
+            </div>
+            <div class="fq-card-tags">
+              {priority_badge(h)}
+              {payoff_badge(h)}
+            </div>
+            <div class="fq-card-bottom">
+              <button class="fq-card-trace" title="查看埋设章原文">
+                <span>🔍 溯源埋设章</span>
+              </button>
+              <div class="fq-card-actions">
+                <button class="fq-card-action fq-action-edit" title="编辑">✏️</button>
+                {action_btn}
+              </div>
+            </div>
+          </div>
+        </div>
+        """
+
+    # ========== 统计计算 ==========
+    main_hooks = [h for h in HOOKS if is_mainline(h)]
+    side_hooks = [h for h in HOOKS if not is_mainline(h)]
+
+    def calc_group(arr: List[Dict]) -> Dict:
+        c = {"total": len(arr), "planted": 0, "hinted": 0, "resolved": 0,
+             "abandoned": 0, "overdue": 0, "soon": 0}
+        for h in arr:
+            sk = h.get("status_key") or "planted"
+            if sk in c:
+                c[sk] += 1
+            ex = status_ex(h)
+            if ex["overdue"]:
+                c["overdue"] += 1
+            if ex["soon"]:
+                c["soon"] += 1
+        c["rate"] = round(c["resolved"] / c["total"] * 100) if c["total"] else 0
+        return c
+
+    m = calc_group(main_hooks)
+    s = calc_group(side_hooks)
+    all_total = len(HOOKS)
+    all_resolved = m["resolved"] + s["resolved"]
+    all_rate = round(all_resolved / all_total * 100) if all_total else 0
+    all_overdue = m["overdue"] + s["overdue"]
+    all_soon = m["soon"] + s["soon"]
+
+    # ========== 渲染 HTML ==========
     gr.HTML(f"""
-    <div class="dt-summary-row">
-      <div class="dt-summary-card"><b>{total}</b><span>总伏笔</span></div>
-      <div class="dt-summary-card dt-ok"><b>{done}</b><span>已回收</span></div>
-      <div class="dt-summary-card dt-warn"><b>{half}</b><span>半回收</span></div>
-      <div class="dt-summary-card dt-danger"><b>{pending}</b><span>已埋设</span></div>
+    <style>
+      /* 伏笔管理台 · 内嵌样式（Gradio CUSTOM_CSS 已覆盖，这里补充兜底） */
+      .fq-hooks-page {{ color:var(--dt-text); }}
+      .fq-toolbar {{ display:flex;align-items:center;justify-content:space-between;gap:12px;
+                     padding:14px 0 18px;flex-wrap:wrap; }}
+      .fq-toolbar-left {{ display:flex;flex-direction:column;gap:4px; }}
+      .fq-toolbar-right {{ display:flex;gap:10px;flex-wrap:wrap; }}
+      .fq-page-title {{ font-size:22px;font-weight:800;color:var(--dt-text);margin:0;letter-spacing:.5px; }}
+      .fq-subtitle {{ font-size:13px;color:var(--dt-text-dim); }}
+      .fq-btn {{ display:inline-flex;align-items:center;justify-content:center;gap:6px;
+                  padding:8px 16px;border:1px solid var(--dt-border);border-radius:10px;
+                  background:var(--dt-panel);color:var(--dt-text);font-family:inherit;
+                  font-size:13px;font-weight:600;cursor:pointer;transition:all .15s ease; }}
+      .fq-btn:hover {{ border-color:var(--dt-accent);color:var(--dt-accent-2); }}
+      .fq-btn-primary {{ background:linear-gradient(135deg,#e0a93b,#b37a1f);border-color:transparent;
+                         color:#0a0f1c;box-shadow:0 4px 14px rgba(224,169,59,.35); }}
+      .fq-btn-primary:hover {{ filter:brightness(1.08);color:#0a0f1c; }}
+      .fq-btn-icon {{ font-size:13px; }}
+      /* 顶部 Hero 卡 */
+      .fq-hero-stat {{ background:linear-gradient(135deg,rgba(224,169,59,.12) 0%,var(--dt-panel) 70%);
+                       border:1px solid rgba(224,169,59,.4);border-radius:16px;padding:22px 26px;
+                       margin-bottom:16px;display:grid;grid-template-columns:auto 1fr;gap:24px;align-items:center; }}
+      .fq-hero-label {{ font-size:12.5px;color:var(--dt-text-dim);font-weight:600;letter-spacing:.3px; }}
+      .fq-hero-value {{ font-size:48px;font-weight:800;line-height:1;color:#e0a93b;
+                         text-shadow:0 2px 10px rgba(224,169,59,.35); }}
+      .fq-hero-unit {{ font-size:22px;margin-left:4px;font-weight:600; }}
+      .fq-hero-sub {{ margin-top:6px;font-size:13px;color:var(--dt-text-dim); }}
+      .fq-hero-right {{ display:flex;flex-direction:column;gap:14px; }}
+      .fq-hero-ratebar {{ height:10px;background:var(--dt-panel-2);border-radius:999px;overflow:hidden; }}
+      .fq-ratebar-fill {{ height:100%;background:linear-gradient(90deg,#e0a93b,#f5c87a);
+                           border-radius:999px;box-shadow:inset 0 1px 2px rgba(255,255,255,.35);
+                           transition:width .5s ease;width:{all_rate}%; }}
+      .fq-hero-warns {{ display:flex;gap:10px;flex-wrap:wrap; }}
+      .fq-warn-chip {{ display:inline-flex;align-items:center;gap:4px;padding:4px 12px;
+                        border-radius:999px;font-size:12px;font-weight:600;border:1px solid transparent; }}
+      .fq-warn-red {{ background:rgba(239,68,68,.1);color:#ef4444;border-color:rgba(239,68,68,.35); }}
+      .fq-warn-orange {{ background:rgba(249,115,22,.1);color:#f97316;border-color:rgba(249,115,22,.35); }}
+      /* 双维度统计卡 */
+      .fq-stat-grid {{ display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-bottom:22px; }}
+      .fq-stat-card {{ background:var(--dt-panel);border:1px solid var(--dt-border);border-radius:14px;
+                        padding:16px 18px;transition:transform .15s ease,box-shadow .15s ease; }}
+      .fq-stat-card:hover {{ transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.15); }}
+      .fq-stat-mainline {{ border-left:4px solid #e0a93b;background:linear-gradient(180deg,rgba(224,169,59,.12),transparent 80%); }}
+      .fq-stat-sideline {{ border-left:4px solid #3b82f6;background:linear-gradient(180deg,rgba(59,130,246,.1),transparent 80%); }}
+      .fq-stat-head {{ display:flex;justify-content:space-between;align-items:center;margin-bottom:10px; }}
+      .fq-stat-title {{ font-size:15px;font-weight:700;color:var(--dt-text); }}
+      .fq-stat-rate {{ font-size:13px;font-weight:600;color:var(--dt-text-dim); }}
+      .fq-stat-body {{ display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:10px; }}
+      .fq-stat-num {{ display:flex;flex-direction:column;gap:2px;padding-right:6px;
+                       border-right:1px dashed var(--dt-border);text-align:center; }}
+      .fq-stat-num:last-child {{ border-right:none;padding-right:0; }}
+      .fq-stat-num b {{ font-size:20px;font-weight:800;line-height:1; }}
+      .fq-stat-num span {{ font-size:11px;color:var(--dt-text-dim);margin-top:2px; }}
+      .fq-num-total b {{ color:var(--dt-text); }}
+      .fq-num-planted b {{ color:#3b82f6; }}
+      .fq-num-hinted b {{ color:#f97316; }}
+      .fq-num-resolved b {{ color:#3bb36f; }}
+      .fq-stat-bar {{ height:6px;background:var(--dt-panel-2);border-radius:999px;overflow:hidden;margin-bottom:10px; }}
+      .fq-stat-bar-fill {{ height:100%;border-radius:999px;transition:width .5s ease; }}
+      .fq-stat-mainline .fq-stat-bar-fill {{ background:linear-gradient(90deg,#e0a93b,#f5c87a);width:{m['rate']}%; }}
+      .fq-stat-sideline .fq-stat-bar-fill {{ background:linear-gradient(90deg,#3b82f6,#93c5fd);width:{s['rate']}%; }}
+      .fq-stat-foot {{ display:flex;justify-content:space-between;align-items:center;
+                        font-size:11.5px;color:var(--dt-text-dim); }}
+      .fq-text-red {{ color:#ef4444;font-weight:700; }}
+      .fq-text-orange {{ color:#f97316;font-weight:700;margin-left:8px; }}
+      /* 筛选条 */
+      .fq-filter-bar {{ display:flex;align-items:center;justify-content:space-between;gap:12px;
+                         flex-wrap:wrap;margin-bottom:18px; }}
+      .fq-filter-group {{ display:flex;align-items:center;gap:6px;flex-wrap:wrap; }}
+      .fq-filter-label {{ font-size:12.5px;color:var(--dt-text-dim);font-weight:600; }}
+      .fq-filter-chip {{ padding:5px 13px;font-size:12.5px;font-weight:600;color:var(--dt-text-dim);
+                          background:var(--dt-panel);border:1px solid var(--dt-border);border-radius:999px;
+                          cursor:pointer;transition:all .12s ease;user-select:none; }}
+      .fq-filter-chip:hover {{ border-color:var(--dt-accent);color:var(--dt-accent-2); }}
+      .fq-filter-active {{ background:var(--dt-accent);border-color:var(--dt-accent);color:#0a0f1c; }}
+      .fq-chip-urgent {{ color:#ef4444;border-color:rgba(239,68,68,.4); }}
+      .fq-chip-urgent.fq-filter-active {{ background:#ef4444;border-color:#ef4444;color:#fff; }}
+      .fq-chip-soon {{ color:#f97316;border-color:rgba(249,115,22,.4); }}
+      .fq-chip-soon.fq-filter-active {{ background:#f97316;border-color:#f97316;color:#fff; }}
+      /* Section 区块 */
+      .fq-section {{ margin-bottom:28px; }}
+      .fq-section-head {{ display:flex;justify-content:space-between;align-items:center;
+                           margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--dt-border); }}
+      .fq-section-title {{ display:flex;align-items:center;gap:10px; }}
+      .fq-section-badge {{ display:inline-flex;align-items:center;gap:4px;padding:4px 12px;
+                            border-radius:999px;font-size:13px;font-weight:700; }}
+      .fq-badge-mainline {{ background:rgba(224,169,59,.15);color:#e0a93b;border:1px solid rgba(224,169,59,.35); }}
+      .fq-badge-sideline {{ background:rgba(59,130,246,.12);color:#3b82f6;border:1px solid rgba(59,130,246,.35); }}
+      .fq-section-desc {{ font-size:12.5px;color:var(--dt-text-dim); }}
+      .fq-section-count {{ font-size:12.5px;color:var(--dt-text-dim);font-weight:600; }}
+      /* 卡片网格 */
+      .fq-card-grid {{ display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:14px; }}
+      /* 钩子卡片 */
+      .fq-hook-card {{ position:relative;display:grid;grid-template-columns:4px 1fr;
+                        border-radius:14px;background:var(--dt-panel);
+                        border:1px solid var(--dt-border);overflow:hidden;
+                        transition:transform .2s ease,box-shadow .2s ease,border-color .2s ease; }}
+      .fq-hook-card:hover {{ transform:translateY(-2px);box-shadow:0 10px 28px rgba(0,0,0,.2);
+                               border-color:rgba(224,169,59,.5); }}
+      .fq-card-accent {{ width:100%;height:100%;min-height:4px; }}
+      .fq-card-mainline {{ border-top:1px solid rgba(224,169,59,.4); }}
+      .fq-card-sideline {{ border-top:1px solid rgba(59,130,246,.35); }}
+      /* 超期脉冲 */
+      .fq-card-overdue {{ border-color:#ef4444;animation:fq-pulse-red 1.6s ease-in-out infinite;
+                           box-shadow:0 0 0 0 rgba(239,68,68,.4); }}
+      .fq-card-overdue .fq-card-accent {{ background:#ef4444; }}
+      @keyframes fq-pulse-red {{
+        0%,100% {{ box-shadow:0 0 0 0 rgba(239,68,68,.35); }}
+        50% {{ box-shadow:0 0 0 6px rgba(239,68,68,0); }}
+      }}
+      .fq-card-soon {{ border-color:rgba(249,115,22,.5); }}
+      .fq-card-soon::after {{ content:'⏱';position:absolute;top:8px;right:8px;font-size:14px;
+                                animation:fq-shake .6s ease-in-out infinite alternate; }}
+      @keyframes fq-shake {{ from {{ transform:rotate(-8deg); }} to {{ transform:rotate(8deg); }} }}
+      .fq-card-resolved {{ opacity:.78; }}
+      .fq-card-resolved .fq-card-accent {{ background:#3bb36f; }}
+      .fq-card-abandoned {{ opacity:.55; }}
+      .fq-card-abandoned .fq-card-accent {{ background:#94a3b8; }}
+      .fq-card-main {{ padding:14px 16px;display:flex;flex-direction:column;gap:10px; }}
+      .fq-card-top {{ display:flex;justify-content:space-between;align-items:flex-start;gap:8px; }}
+      .fq-card-id code {{ background:var(--dt-panel-2);padding:2px 8px;border-radius:6px;
+                            font-family:var(--font-mono);font-size:11.5px;color:var(--dt-accent-2);
+                            border:1px solid var(--dt-border); }}
+      .fq-card-statuses {{ display:flex;align-items:center;gap:6px;flex-wrap:wrap; }}
+      .fq-status-chip {{ display:inline-flex;align-items:center;padding:3px 10px;border-radius:999px;
+                          font-size:11.5px;font-weight:600;border:1px solid transparent; }}
+      .fq-badge {{ display:inline-flex;align-items:center;padding:2px 10px;border-radius:999px;
+                    font-size:11px;font-weight:600;border:1px solid transparent; }}
+      .fq-badge-overdue {{ background:rgba(239,68,68,.12);color:#ef4444;border-color:rgba(239,68,68,.35); }}
+      .fq-badge-soon {{ background:rgba(249,115,22,.12);color:#f97316;border-color:rgba(249,115,22,.35); }}
+      .fq-card-desc {{ font-size:13.5px;line-height:1.65;color:var(--dt-text);
+                         display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden; }}
+      .fq-card-meta {{ display:flex;gap:14px;flex-wrap:wrap; }}
+      .fq-meta-item {{ display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--dt-text-dim); }}
+      .fq-meta-icon {{ font-size:12px; }}
+      .fq-meta-overdue {{ color:#ef4444;font-weight:700; }}
+      .fq-card-tags {{ display:flex;gap:6px;flex-wrap:wrap; }}
+      .fq-pri {{ display:inline-flex;align-items:center;padding:2px 10px;border-radius:999px;
+                  font-size:11px;font-weight:700;border:1px solid transparent; }}
+      .fq-pri-high {{ background:rgba(239,68,68,.12);color:#ef4444;border:1px solid rgba(239,68,68,.3); }}
+      .fq-pri-mid {{ background:rgba(249,115,22,.1);color:#f97316;border:1px solid rgba(249,115,22,.28); }}
+      .fq-pri-low {{ background:var(--dt-panel-2);color:var(--dt-text-dim);border:1px solid var(--dt-border); }}
+      .fq-card-bottom {{ display:flex;justify-content:space-between;align-items:center;
+                          gap:8px;margin-top:2px;padding-top:10px;border-top:1px dashed var(--dt-border); }}
+      .fq-card-trace {{ display:inline-flex;align-items:center;gap:5px;padding:6px 12px;
+                         background:var(--dt-panel-2);border:1px solid var(--dt-border);
+                         border-radius:9px;color:var(--dt-text-dim);font-size:12px;font-weight:600;
+                         cursor:pointer;transition:all .12s ease;font-family:inherit; }}
+      .fq-card-trace:hover {{ background:rgba(14,165,233,.08);color:#0ea5e9;
+                                border-color:rgba(14,165,233,.3); }}
+      .fq-card-actions {{ display:flex;gap:6px; }}
+      .fq-card-action {{ display:inline-flex;align-items:center;justify-content:center;gap:4px;
+                          padding:6px 10px;background:var(--dt-panel-2);border:1px solid var(--dt-border);
+                          border-radius:8px;color:var(--dt-text-dim);font-size:12px;font-weight:600;
+                          cursor:pointer;transition:all .12s ease;font-family:inherit; }}
+      .fq-card-action:hover {{ transform:translateY(-1px); }}
+      .fq-action-edit:hover {{ background:rgba(14,165,233,.1);color:#0ea5e9;border-color:rgba(14,165,233,.3); }}
+      .fq-action-resolve {{ background:linear-gradient(135deg,#3bb36f,#2d8f57);border-color:transparent;
+                              color:#fff;box-shadow:0 3px 10px rgba(59,179,111,.3); }}
+      .fq-action-resolve:hover {{ filter:brightness(1.08);color:#fff; }}
+      .fq-action-done {{ opacity:.7;cursor:not-allowed; }}
+      /* 空状态 */
+      .fq-empty-cards {{ padding:28px 12px;text-align:center;color:var(--dt-text-dim);font-size:13px;
+                          border:1px dashed var(--dt-border);border-radius:12px;
+                          background:var(--dt-panel);display:flex;flex-direction:column;
+                          align-items:center;gap:6px; }}
+      .fq-empty-cards-icon {{ font-size:28px;opacity:.6; }}
+    </style>
+
+    <div class="fq-hooks-page">
+      <!-- 工具栏 -->
+      <div class="fq-toolbar">
+        <div class="fq-toolbar-left">
+          <h2 class="fq-page-title">🪝 伏笔管理台</h2>
+          <span class="fq-subtitle">大主线钩子推动剧情 · 支线钩子调动情绪（当前：第 {current_ch} 章）</span>
+        </div>
+        <div class="fq-toolbar-right">
+          <button class="fq-btn fq-btn-primary">
+            <span class="fq-btn-icon">+</span>新建伏笔
+          </button>
+          <button class="fq-btn">🔄 刷新</button>
+        </div>
+      </div>
+
+      <!-- 顶部 Hero 卡：总体回收率 -->
+      <div class="fq-hero-stat">
+        <div class="fq-hero-left">
+          <div class="fq-hero-label">📈 总体回收率</div>
+          <div class="fq-hero-value">{all_rate}<span class="fq-hero-unit">%</span></div>
+          <div class="fq-hero-sub">已埋坑 {all_resolved} / 总伏笔 {all_total}</div>
+        </div>
+        <div class="fq-hero-right">
+          <div class="fq-hero-ratebar">
+            <div class="fq-ratebar-fill"></div>
+          </div>
+          <div class="fq-hero-warns">
+            {f'<span class="fq-warn-chip fq-warn-red">🚨 {all_overdue} 个超期未收</span>' if all_overdue > 0 else ''}
+            {f'<span class="fq-warn-chip fq-warn-orange">⏱ {all_soon} 个临近回收</span>' if all_soon > 0 else ''}
+          </div>
+        </div>
+      </div>
+
+      <!-- 双维度统计卡 -->
+      <div class="fq-stat-grid">
+        <div class="fq-stat-card fq-stat-mainline">
+          <div class="fq-stat-head">
+            <div class="fq-stat-title">🎯 大主线钩子</div>
+            <div class="fq-stat-rate">回收率 {m['rate']}%</div>
+          </div>
+          <div class="fq-stat-body">
+            <div class="fq-stat-num fq-num-total"><b>{m['total']}</b><span>总数</span></div>
+            <div class="fq-stat-num fq-num-planted"><b>{m['planted']}</b><span>已埋下</span></div>
+            <div class="fq-stat-num fq-num-hinted"><b>{m['hinted']}</b><span>回收中</span></div>
+            <div class="fq-stat-num fq-num-resolved"><b>{m['resolved']}</b><span>已埋坑</span></div>
+          </div>
+          <div class="fq-stat-bar"><div class="fq-stat-bar-fill"></div></div>
+          <div class="fq-stat-foot">
+            <span>推动核心剧情走向（core 全书 · long 跨卷）</span>
+            <span>
+              {f'<b class="fq-text-red">🚨{m["overdue"]}超期</b>' if m['overdue'] else ''}
+              {f'<b class="fq-text-orange">⏱{m["soon"]}临近</b>' if m['soon'] else ''}
+            </span>
+          </div>
+        </div>
+        <div class="fq-stat-card fq-stat-sideline">
+          <div class="fq-stat-head">
+            <div class="fq-stat-title">💧 支线钩子</div>
+            <div class="fq-stat-rate">回收率 {s['rate']}%</div>
+          </div>
+          <div class="fq-stat-body">
+            <div class="fq-stat-num fq-num-total"><b>{s['total']}</b><span>总数</span></div>
+            <div class="fq-stat-num fq-num-planted"><b>{s['planted']}</b><span>已埋下</span></div>
+            <div class="fq-stat-num fq-num-hinted"><b>{s['hinted']}</b><span>回收中</span></div>
+            <div class="fq-stat-num fq-num-resolved"><b>{s['resolved']}</b><span>已埋坑</span></div>
+          </div>
+          <div class="fq-stat-bar"><div class="fq-stat-bar-fill"></div></div>
+          <div class="fq-stat-foot">
+            <span>实时调动读者情绪（short 卷内回收）</span>
+            <span>
+              {f'<b class="fq-text-red">🚨{s["overdue"]}超期</b>' if s['overdue'] else ''}
+              {f'<b class="fq-text-orange">⏱{s["soon"]}临近</b>' if s['soon'] else ''}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 筛选条 -->
+      <div class="fq-filter-bar">
+        <div class="fq-filter-group">
+          <span class="fq-filter-label">状态：</span>
+          <button class="fq-filter-chip fq-filter-active">全部</button>
+          <button class="fq-filter-chip">🎣 已埋下</button>
+          <button class="fq-filter-chip">🔔 回收中</button>
+          <button class="fq-filter-chip">✅ 已埋坑</button>
+        </div>
+        <div class="fq-filter-group">
+          <button class="fq-filter-chip fq-chip-urgent">🚨 超期未收</button>
+          <button class="fq-filter-chip fq-chip-soon">⏱ 临近回收</button>
+        </div>
+      </div>
+
+      <!-- 大主线钩子区 -->
+      <div class="fq-section fq-section-mainline">
+        <div class="fq-section-head">
+          <div class="fq-section-title">
+            <span class="fq-section-badge fq-badge-mainline">🎯 大主线</span>
+            <span class="fq-section-desc">核心剧情推动器，long 跨卷 + core 全书级</span>
+          </div>
+          <span class="fq-section-count">{len(main_hooks)} 个</span>
+        </div>
+        <div class="fq-card-grid">
+          {''.join(hook_card(h, 'main') for h in main_hooks) if main_hooks else
+            '<div class="fq-empty-cards"><div class="fq-empty-cards-icon">🎯</div><div class="fq-empty-cards-text">暂无大主线钩子</div></div>'}
+        </div>
+      </div>
+
+      <!-- 支线钩子区 -->
+      <div class="fq-section fq-section-sideline">
+        <div class="fq-section-head">
+          <div class="fq-section-title">
+            <span class="fq-section-badge fq-badge-sideline">💧 支线</span>
+            <span class="fq-section-desc">情绪实时调动，short 卷内回收</span>
+          </div>
+          <span class="fq-section-count">{len(side_hooks)} 个</span>
+        </div>
+        <div class="fq-card-grid">
+          {''.join(hook_card(h, 'side') for h in side_hooks) if side_hooks else
+            '<div class="fq-empty-cards"><div class="fq-empty-cards-icon">💧</div><div class="fq-empty-cards-text">暂无支线钩子</div></div>'}
+        </div>
+      </div>
     </div>
     """)
-    # 表格
-    rows = []
-    for h in HOOKS:
-        status_cls = {
-            "已回收": "dt-tag-ok",
-            "半回收": "dt-tag-warn",
-            "已埋设": "dt-tag-danger",
-        }.get(h["status"], "dt-tag-soft")
-        prio_cls = "dt-tag-danger" if h["priority"] == "P0" else (
-            "dt-tag-warn" if h["priority"] == "P1" else "dt-tag-soft"
-        )
-        rows.append(f"""
-        <tr>
-          <td><code>{h['id']}</code></td>
-          <td><b>{h['title']}</b><div class="dt-row-note">{h['note']}</div></td>
-          <td><span class="dt-tag {status_cls}">{h['status']}</span></td>
-          <td>{h['planted_ch']}</td>
-          <td>{h['recycle_ch']}</td>
-          <td><span class="dt-tag {prio_cls}">{h['priority']}</span></td>
-        </tr>
-        """)
-    table = f"""
-    <table class="dt-table">
-      <thead>
-        <tr>
-          <th>编号</th><th>伏笔</th><th>状态</th>
-          <th>埋设</th><th>回收</th><th>优先级</th>
-        </tr>
-      </thead>
-      <tbody>{''.join(rows)}</tbody>
-    </table>
-    """
-    gr.HTML(table)
 
 
 def render_highlights() -> None:
