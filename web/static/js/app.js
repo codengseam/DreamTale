@@ -43,6 +43,7 @@
   var ROUTES = {
     '#/projects': { view: 'projects', label: '作品' },
     '#/settings': { view: 'settings', label: '设定' },
+    '#/encyclopedia': { view: 'encyclopedia', label: '设定百科' },
     '#/outline':  { view: 'outline',  label: '大纲' },
     '#/chapters': { view: 'chapters', label: '章节' },
     '#/hooks':    { view: 'hooks',    label: '伏笔' },

@@ -394,3 +394,88 @@ export class Outline {
     return new Outline(json);
   }
 }
+
+// ---------- Encyclopedia（设定百科）----------
+
+/** 设定百科词条类型枚举（对齐番茄/起点分类逻辑） */
+export const ENCYCLOPEDIA_TYPES = [
+  { key: 'character', label: '角色', icon: '👤', color: '#e74c3c' },
+  { key: 'place',     label: '地点', icon: '📍', color: '#3498db' },
+  { key: 'skill',     label: '功法', icon: '⚔️', color: '#2ecc71' },
+  { key: 'faction',   label: '势力', icon: '🏛️', color: '#9b59b6' },
+  { key: 'event',     label: '事件', icon: '📅', color: '#f39c12' },
+  { key: 'item',      label: '物品', icon: '💎', color: '#1abc9c' },
+  { key: 'concept',   label: '概念', icon: '💡', color: '#e67e22' },
+  { key: 'other',     label: '其他', icon: '📁', color: '#7f8c8d' },
+];
+
+/** 通过 key 拿类型元信息（兜底 other） */
+export function getEncyclopediaTypeMeta(typeKey) {
+  return ENCYCLOPEDIA_TYPES.find(t => t.key === typeKey)
+      || ENCYCLOPEDIA_TYPES[ENCYCLOPEDIA_TYPES.length - 1];
+}
+
+/** 设定百科词条 */
+export class EncyclopediaEntry {
+  constructor({
+    id,
+    name,
+    type = 'other',
+    summary = '',
+    content = '',
+    tags = [],
+    aliases = [],
+    related_entries = [],
+    first_appear_ch = '',
+    image = '',
+    sort_order = 0,
+    created_at = '',
+    updated_at = '',
+  } = {}) {
+    this.id = id || ('ency_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7));
+    this.name = name;
+    // 校验 type 是否在合法枚举内，兜底 other
+    this.type = ENCYCLOPEDIA_TYPES.some(t => t.key === type) ? type : 'other';
+    this.summary = summary;
+    this.content = content;
+    this.tags = Array.isArray(tags) ? tags : [];
+    this.aliases = Array.isArray(aliases) ? aliases : [];
+    this.related_entries = Array.isArray(related_entries) ? related_entries : [];
+    this.first_appear_ch = first_appear_ch;
+    this.image = image;
+    this.sort_order = Number(sort_order) || 0;
+    this.created_at = created_at || new Date().toISOString();
+    this.updated_at = updated_at || new Date().toISOString();
+  }
+
+  toJSON() {
+    return {
+      id: this.id,
+      name: this.name,
+      type: this.type,
+      summary: this.summary,
+      content: this.content,
+      tags: this.tags,
+      aliases: this.aliases,
+      related_entries: this.related_entries,
+      first_appear_ch: this.first_appear_ch,
+      image: this.image,
+      sort_order: this.sort_order,
+      created_at: this.created_at,
+      updated_at: this.updated_at,
+    };
+  }
+
+  static fromJSON(json = {}) {
+    return new EncyclopediaEntry(json);
+  }
+}
+
+/** 设定百科标签（运行时聚合视图，不单独存表；从所有 entry.tags 聚合 count） */
+export class EncyclopediaTag {
+  constructor({ name, color = '', count = 0 } = {}) {
+    this.name = name;
+    this.color = color;
+    this.count = Number(count) || 0;
+  }
+}
