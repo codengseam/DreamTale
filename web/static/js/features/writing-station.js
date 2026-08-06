@@ -102,6 +102,7 @@
       rolesInChapter: [],     // 当前章节出现的角色（用于右侧速览）
       settingsInChapter: [],  // 当前章节出现的设定/地点/功法/物品
       hooksInChapter: [],     // 当前章节涉及的伏笔
+      allHooks: [],           // 所有真实伏笔（从 storage.listHooks 拉取）
       lastScannedLen: 0,      // 增量扫描用
       atPopoverEl: null,
       atQueryMode: false,
@@ -295,15 +296,17 @@
     async function reload() {
       listEl.innerHTML = '<p class="dt-empty-hint">加载中…</p>';
       try {
-        [state.chapters, state.volumes] = await Promise.all([
+        [state.chapters, state.volumes, state.allHooks] = await Promise.all([
           DT().storage.listChapters(pid),
           DT().storage.listVolumes(pid),
+          DT().storage.listHooks(pid),
           loadEncyclopedia(), // 并行加载百科词条
         ]);
         state.chapters = state.chapters || [];
+        state.allHooks = state.allHooks || [];
         state.volumes = (state.volumes || []).sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
         renderList();
-        // 章节/百科加载完成后重扫右侧，因为现在有真实 vocab 了
+        // 章节/百科/伏笔加载完成后重扫右侧
         scanAndUpdateSidebar(true);
       } catch (err) {
         console.error('[ws] 加载失败', err);
@@ -515,6 +518,7 @@
           theme: DTGlobal.state.theme || 'light',
           onChange: onContentChange,
           onSave: () => { flushSave(); return true; },
+          plainText: true, // ← 小说纯文本写作模式：隐藏 Markdown 格式按钮和三模式切换
         }) : null;
       } catch (err) {
         console.error('[ws] editor create failed', err);
@@ -638,8 +642,8 @@
             if (hit) state.settingsInChapter.push({ type: k, ...hit });
           }});
         });
-        // 伏笔
-        state.hooksInChapter = generateMockHooksForChapter();
+        // 伏笔：从真实 allHooks 中按当前章节区间过滤，并适配渲染格式
+        state.hooksInChapter = filterHooksForCurrentChapter(state.allHooks, state.currentCh);
         renderSidebar();
       });
 
@@ -651,12 +655,60 @@
         return r;
       }
     }
-    function generateMockHooksForChapter() {
-      return [
-        { id: 'H-002', prio: 'P0', title: '沈砚身世之谜', status: '已埋设', planted: '第 3 章', tip: '预计卷四揭穿，本章可埋下暗示' },
-        { id: 'H-004', prio: 'P0', title: '无相门灭门之仇', status: '已埋设', planted: '第 28 章', tip: '影杀与灭门之仇关联' },
-        { id: 'H-005', prio: 'P1', title: '神祇故土封印', status: '已埋设', planted: '第 42 章', tip: '若本章出现封印相关词，可呼应' },
-      ];
+    function filterHooksForCurrentChapter(allHooks, currentCh) {
+      if (!Array.isArray(allHooks) || !allHooks.length || !currentCh) return [];
+      const chNo = Number(currentCh.ch_no) || 0;
+      // 优先级映射
+      const prioMap = { high: 'P0', medium: 'P1', low: 'P2' };
+      const statusLabel = { planted: '已埋设', hinted: '回收中', resolved: '已回收', abandoned: '已废弃' };
+      const strengthLabel = { strong: '强', medium: '中', weak: '弱' };
+      const results = [];
+      allHooks.forEach((h) => {
+        // 排除已废弃和已回收的（除非当前章就在回收章，用于提示确认回收）
+        if (h.status === 'abandoned') return;
+        const planted = Number(h.planted_ch) || 0;
+        const target = Number(h.target_resolve_ch) || 0;
+        // 判断是否关联本章：planted<=当前章<=target（活跃期），或临近 planted/target ±3 章
+        const windowLeft = Math.max(1, Math.min(planted, target) - 3);
+        const windowRight = Math.max(planted, target) + 3;
+        const inWindow = chNo >= windowLeft && chNo <= windowRight;
+        if (!inWindow && !(!planted && !target)) return; // 全无章号也保留（新伏笔待安排）
+        // 组装 tip
+        const tips = [];
+        if (target && chNo < target) {
+          tips.push(`目标第 ${target} 章回收`);
+        } else if (target && chNo >= target) {
+          tips.push(`⚠️ 已超过目标回收章（第 ${target} 章），请尽快处理`);
+        }
+        if (h.strength) tips.push(`强度：${strengthLabel[h.strength] || h.strength}`);
+        if (h.payoff_type) {
+          const payoffLabel = { reveal: '真相揭示', twist: '剧情反转', powerup: '能力解锁', emotional: '情感冲击', callback: '回扣前文' };
+          tips.push(`回收方式：${payoffLabel[h.payoff_type] || h.payoff_type}`);
+        }
+        const desc = h.description || '（无描述）';
+        // 显示用"标题"：desc 前 30 字截断
+        const title = desc.length > 30 ? desc.slice(0, 30) + '…' : desc;
+        const plantedText = planted ? `第 ${planted} 章` : '待埋设';
+        results.push({
+          id: h.hook_id || String(h.id || ''),
+          prio: prioMap[h.priority] || 'P2',
+          title,
+          status: statusLabel[h.status] || h.status || '未知',
+          planted: plantedText,
+          tip: tips.length ? tips.join('，') : (desc.length > 60 ? desc.slice(0, 60) + '…' : desc),
+          _raw: h,
+        });
+      });
+      // 排序：P0 > P1 > P2，再按 planted/target 临近度
+      const prioOrder = { P0: 0, P1: 1, P2: 2 };
+      results.sort((a, b) => {
+        const pa = prioOrder[a.prio] ?? 3, pb = prioOrder[b.prio] ?? 3;
+        if (pa !== pb) return pa - pb;
+        const ra = a._raw ? Math.abs((Number(a._raw.target_resolve_ch) || 99999) - chNo) : 99999;
+        const rb = b._raw ? Math.abs((Number(b._raw.target_resolve_ch) || 99999) - chNo) : 99999;
+        return ra - rb;
+      });
+      return results;
     }
 
     function renderSidebar() {
@@ -995,8 +1047,10 @@
     statusSel.addEventListener('change', async () => {
       if (!state.currentCh) return;
       state.currentCh.status = statusSel.value;
+      markDirty(); // ← 关键修复：未标记 dirty 会被 flushSave 短路返回
       await flushSave();
       renderList();
+      renderHeader(); // 同步 header 中 statusSel 显示（防止被覆盖）
     });
     // 快捷键 Ctrl+Shift+F 专注模式
     document.addEventListener('keydown', (e) => {

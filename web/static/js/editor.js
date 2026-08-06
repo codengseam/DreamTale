@@ -182,6 +182,7 @@ class MarkdownEditor {
    * @param {(text:string)=>void} [options.onChange] 内容变更回调（防抖 1500ms）
    * @param {(text:string)=>void} [options.onSave] 保存回调（Ctrl+S 或失焦触发）
    * @param {'dark'|'light'|'sepia'} [options.theme='light'] 主题
+   * @param {boolean} [options.plainText=false] 纯文本写作模式（隐藏 Markdown 格式按钮、源码/分屏/预览切换，移除预览区）
    */
   constructor(container, options = {}) {
     if (!container || !(container instanceof HTMLElement)) {
@@ -192,9 +193,10 @@ class MarkdownEditor {
     this.value = options.initialValue || '';
     this.onChange = typeof options.onChange === 'function' ? options.onChange : null;
     this.onSave = typeof options.onSave === 'function' ? options.onSave : null;
+    this.plainText = !!options.plainText;
 
     // 状态
-    this.mode = 'source';   // 默认源码模式
+    this.mode = 'source';   // 默认源码模式（纯文本模式固定 source，忽略切换）
     this.theme = VALID_THEMES.has(options.theme) ? options.theme : 'light';
     this.wordCount = this.value.length;
     this._debounceTimer = null;
@@ -213,7 +215,7 @@ class MarkdownEditor {
   // ============ DOM 构建 ============
   _buildDom() {
     const root = document.createElement('div');
-    root.className = 'dreamtale-editor';
+    root.className = 'dreamtale-editor' + (this.plainText ? ' de-plain-text' : '');
     root.dataset.theme = this.theme;
     root.dataset.mode = this.mode;
 
@@ -221,61 +223,66 @@ class MarkdownEditor {
     const toolbar = document.createElement('div');
     toolbar.className = 'de-toolbar';
 
-    // 工具栏：动作按钮组
-    const actions = document.createElement('div');
-    actions.className = 'de-toolbar-actions';
-    TOOLBAR_ACTIONS.forEach((act) => {
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'de-btn de-btn-' + act.name;
-      btn.title = act.title;
-      btn.textContent = act.label;
-      btn.dataset.action = act.name;
-      btn.addEventListener('click', (e) => {
-        e.preventDefault();
-        this._applyAction(act);
+    if (!this.plainText) {
+      // 工具栏：动作按钮组（仅非纯文本模式显示 Markdown 格式按钮）
+      const actions = document.createElement('div');
+      actions.className = 'de-toolbar-actions';
+      TOOLBAR_ACTIONS.forEach((act) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'de-btn de-btn-' + act.name;
+        btn.title = act.title;
+        btn.textContent = act.label;
+        btn.dataset.action = act.name;
+        btn.addEventListener('click', (e) => {
+          e.preventDefault();
+          this._applyAction(act);
+        });
+        actions.appendChild(btn);
       });
-      actions.appendChild(btn);
-    });
-    EXTERNAL_HOOKS.extraToolbarButtons.forEach((act) => {
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'de-btn de-btn-' + act.name;
-      btn.title = act.title;
-      btn.textContent = act.label;
-      btn.dataset.action = act.name;
-      btn.addEventListener('click', (e) => {
-        e.preventDefault();
-        act.onClick(this);
+      EXTERNAL_HOOKS.extraToolbarButtons.forEach((act) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'de-btn de-btn-' + act.name;
+        btn.title = act.title;
+        btn.textContent = act.label;
+        btn.dataset.action = act.name;
+        btn.addEventListener('click', (e) => {
+          e.preventDefault();
+          act.onClick(this);
+        });
+        actions.appendChild(btn);
       });
-      actions.appendChild(btn);
-    });
-    toolbar.appendChild(actions);
+      toolbar.appendChild(actions);
+    }
 
     // 工具栏：模式切换 + 字数
     const right = document.createElement('div');
     right.className = 'de-toolbar-right';
 
-    const modeGroup = document.createElement('div');
-    modeGroup.className = 'de-mode-group';
-    modeGroup.setAttribute('role', 'tablist');
-    modeGroup.setAttribute('aria-label', '编辑器视图模式');
-    [
-      { mode: 'source', label: '源码' },
-      { mode: 'split', label: '分屏' },
-      { mode: 'preview', label: '预览' }
-    ].forEach((m) => {
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'de-mode-btn' + (m.mode === this.mode ? ' active' : '');
-      btn.dataset.mode = m.mode;
-      btn.setAttribute('role', 'tab');
-      btn.setAttribute('aria-selected', m.mode === this.mode ? 'true' : 'false');
-      btn.textContent = m.label;
-      btn.addEventListener('click', () => this.setMode(m.mode));
-      modeGroup.appendChild(btn);
-    });
-    right.appendChild(modeGroup);
+    if (!this.plainText) {
+      // 仅非纯文本模式显示 源码/分屏/预览 三切换
+      const modeGroup = document.createElement('div');
+      modeGroup.className = 'de-mode-group';
+      modeGroup.setAttribute('role', 'tablist');
+      modeGroup.setAttribute('aria-label', '编辑器视图模式');
+      [
+        { mode: 'source', label: '源码' },
+        { mode: 'split', label: '分屏' },
+        { mode: 'preview', label: '预览' }
+      ].forEach((m) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'de-mode-btn' + (m.mode === this.mode ? ' active' : '');
+        btn.dataset.mode = m.mode;
+        btn.setAttribute('role', 'tab');
+        btn.setAttribute('aria-selected', m.mode === this.mode ? 'true' : 'false');
+        btn.textContent = m.label;
+        btn.addEventListener('click', () => this.setMode(m.mode));
+        modeGroup.appendChild(btn);
+      });
+      right.appendChild(modeGroup);
+    }
 
     // 字数统计
     const counter = document.createElement('span');
@@ -310,31 +317,39 @@ class MarkdownEditor {
     const textarea = document.createElement('textarea');
     textarea.className = 'de-textarea';
     textarea.value = this.value;
-    textarea.placeholder = '在此输入 Markdown 正文…';
+    textarea.placeholder = this.plainText ? '在此输入正文…' : '在此输入 Markdown 正文…';
     textarea.spellcheck = false;
-    textarea.setAttribute('aria-label', 'Markdown 源码编辑区');
+    textarea.setAttribute('aria-label', this.plainText ? '正文编辑区' : 'Markdown 源码编辑区');
+    // 纯文本模式：移除默认 monospace 字体暗示（用正文字体）
+    if (this.plainText) {
+      textarea.style.fontFamily = 'inherit';
+      textarea.style.lineHeight = '1.8';
+      textarea.style.fontSize = '16px';
+    }
     textareaWrap.appendChild(textarea);
     body.appendChild(textareaWrap);
     this._textarea = textarea;
     this._textareaWrap = textareaWrap;
 
-    // 分隔条（split 模式可见）
-    const divider = document.createElement('div');
-    divider.className = 'de-divider';
-    divider.setAttribute('aria-hidden', 'true');
-    body.appendChild(divider);
-    this._dividerEl = divider;
+    if (!this.plainText) {
+      // 分隔条（split 模式可见，仅非纯文本模式）
+      const divider = document.createElement('div');
+      divider.className = 'de-divider';
+      divider.setAttribute('aria-hidden', 'true');
+      body.appendChild(divider);
+      this._dividerEl = divider;
 
-    // 预览区
-    const previewWrap = document.createElement('div');
-    previewWrap.className = 'de-pane de-pane-preview';
-    previewWrap.setAttribute('aria-label', 'Markdown 预览区');
-    const preview = document.createElement('div');
-    preview.className = 'de-preview markdown-body';
-    previewWrap.appendChild(preview);
-    body.appendChild(previewWrap);
-    this._previewEl = preview;
-    this._previewWrap = previewWrap;
+      // 预览区（仅非纯文本模式）
+      const previewWrap = document.createElement('div');
+      previewWrap.className = 'de-pane de-pane-preview';
+      previewWrap.setAttribute('aria-label', 'Markdown 预览区');
+      const preview = document.createElement('div');
+      preview.className = 'de-preview markdown-body';
+      previewWrap.appendChild(preview);
+      body.appendChild(previewWrap);
+      this._previewEl = preview;
+      this._previewWrap = previewWrap;
+    }
 
     root.appendChild(body);
 
@@ -599,6 +614,8 @@ class MarkdownEditor {
 
   // ============ 模式切换 ============
   _applyMode(mode) {
+    // 纯文本模式：永远强制 source 模式，隐藏预览/分屏逻辑
+    if (this.plainText) mode = 'source';
     if (!VALID_MODES.has(mode)) return;
     this.mode = mode;
     if (this._rootEl) this._rootEl.dataset.mode = mode;
@@ -612,14 +629,16 @@ class MarkdownEditor {
       });
     }
 
-    // 分栏可见性
-    if (this._textareaWrap) this._textareaWrap.classList.toggle('hidden', mode === 'preview');
-    if (this._previewWrap) this._previewWrap.classList.toggle('hidden', mode === 'source');
-    if (this._dividerEl) this._dividerEl.classList.toggle('hidden', mode !== 'split');
+    // 分栏可见性（纯文本模式没有预览/分隔条，跳过）
+    if (!this.plainText) {
+      if (this._textareaWrap) this._textareaWrap.classList.toggle('hidden', mode === 'preview');
+      if (this._previewWrap) this._previewWrap.classList.toggle('hidden', mode === 'source');
+      if (this._dividerEl) this._dividerEl.classList.toggle('hidden', mode !== 'split');
 
-    // preview 模式下渲染最新内容
-    if (mode === 'preview' || mode === 'split') {
-      this._updatePreview();
+      // preview 模式下渲染最新内容
+      if (mode === 'preview' || mode === 'split') {
+        this._updatePreview();
+      }
     }
 
     // 工具栏在 preview 模式下整体禁用（动作按钮）
@@ -631,6 +650,8 @@ class MarkdownEditor {
   }
 
   setMode(mode) {
+    // 纯文本模式：忽略任何切换请求
+    if (this.plainText) return;
     if (!VALID_MODES.has(mode)) {
       console.warn('[DreamTale Editor] 无效的模式:', mode);
       return;
