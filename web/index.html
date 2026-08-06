@@ -9,6 +9,7 @@
   <!-- ============ 全局样式 ============ -->
   <!-- 顺序：app.css（全局变量+布局+组件）→ editor.css（编辑器）→ reader.css（阅读器）→ writing-station.css（三栏工作站） -->
   <link rel="stylesheet" href="static/css/app.css" />
+  <link rel="stylesheet" href="static/css/_encyclopedia-compat.css" />
   <link rel="stylesheet" href="static/css/editor.css" />
   <link rel="stylesheet" href="static/css/reader.css" />
   <link rel="stylesheet" href="static/css/writing-station.css" />
@@ -65,6 +66,9 @@
         </div>
         <div class="nav-item" data-route="#/settings">
           <span class="nav-icon">🎭</span><span>设定</span>
+        </div>
+        <div class="nav-item" data-route="#/encyclopedia">
+          <span class="nav-icon">📖</span><span>设定百科</span>
         </div>
         <div class="nav-item" data-route="#/outline">
           <span class="nav-icon">🗺️</span><span>大纲</span>
@@ -150,6 +154,7 @@
   <!-- features/*.js 用经典 script IIFE 模式，挂载 window.DreamTaleFeatures，需在 app.js 之前加载 -->
   <script src="static/js/features/projects.js" defer></script>
   <script src="static/js/features/settings.js" defer></script>
+  <script src="static/js/features/encyclopedia.js" defer></script>
   <script src="static/js/features/outline.js" defer></script>
   <script src="static/js/features/chapters.js" defer></script>
   <script src="static/js/features/writing-station.js" defer></script>

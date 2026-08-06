@@ -1,22 +1,23 @@
 // IndexedDB 存储后端
 // 纯原生 IndexedDB API，无第三方库。
 // 数据库：dreamtale
-// object stores: projects, chapters, hooks, volumes, characters, world_settings, meta
+// object stores: projects, chapters, hooks, volumes, characters, world_settings, encyclopedia, meta
 // chapters 用 [project_id, vol_no, ch_no] 作为复合 key（keyPath）
 // 所有非 projects store 都建 project_id 单字段索引，便于按项目查询与级联删除。
 
 import { IStorageBackend, NotSupportedError } from './interface.js';
-import { Project, Volume, Chapter, Hook, Character, WorldSetting } from '../core/models.js';
+import { Project, Volume, Chapter, Hook, Character, WorldSetting, EncyclopediaEntry } from '../core/models.js';
 import { normalizeVol, normalizeCh } from '../core/vault-schema.js';
 
 const DB_NAME = 'dreamtale';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const STORE_PROJECTS = 'projects';
 const STORE_CHAPTERS = 'chapters';
 const STORE_HOOKS = 'hooks';
 const STORE_VOLUMES = 'volumes';
 const STORE_CHARACTERS = 'characters';
 const STORE_WORLD_SETTINGS = 'world_settings';
+const STORE_ENCYCLOPEDIA = 'encyclopedia';
 const STORE_META = 'meta';
 
 /** 章节复合 key 字段名 */
@@ -29,6 +30,7 @@ const PROJECT_SCOPED_STORES = [
   STORE_VOLUMES,
   STORE_CHARACTERS,
   STORE_WORLD_SETTINGS,
+  STORE_ENCYCLOPEDIA,
 ];
 
 // ---------- 打开/升级数据库 ----------
@@ -71,6 +73,14 @@ export function openDB(dbName = DB_NAME, version = DB_VERSION) {
           keyPath: ['project_id', 'category'],
         });
         store.createIndex('project_id', 'project_id', { unique: false });
+      }
+      // encyclopedia store: 复合 key [project_id, id]，并建 type 索引加速分类筛选
+      if (!db.objectStoreNames.contains(STORE_ENCYCLOPEDIA)) {
+        const store = db.createObjectStore(STORE_ENCYCLOPEDIA, {
+          keyPath: ['project_id', 'id'],
+        });
+        store.createIndex('project_id', 'project_id', { unique: false });
+        store.createIndex('type', ['project_id', 'type'], { unique: false });
       }
       // meta store: KV 元数据
       if (!db.objectStoreNames.contains(STORE_META)) {
@@ -317,6 +327,158 @@ export class IndexedDBBackend extends IStorageBackend {
     });
   }
 
+  // ---------- 设定百科 Encyclopedia ----------
+
+  async listEncyclopediaEntries(projectId, filter = {}) {
+    const db = await this._db();
+    let rows;
+    // 有 type 过滤时用 type 索引加速
+    if (filter.type) {
+      rows = await new Promise((resolve, reject) => {
+        const store = tx(db, STORE_ENCYCLOPEDIA, 'readonly');
+        const idx = store.index('type');
+        const req = idx.getAll(IDBKeyRange.only([projectId, filter.type]));
+        req.onsuccess = () => resolve(req.result || []);
+        req.onerror = () => reject(req.error);
+      });
+    } else {
+      rows = await getAllByProject(db, STORE_ENCYCLOPEDIA, projectId);
+    }
+    let entries = rows.map(r => EncyclopediaEntry.fromJSON(r));
+    // tag 过滤（内存过滤，标签通常规模可控）
+    if (filter.tags && filter.tags.length) {
+      const tagSet = new Set(filter.tags);
+      entries = entries.filter(e => (e.tags || []).some(t => tagSet.has(t)));
+    }
+    // 排序：sort_order 升序 + updated_at 降序
+    entries.sort((a, b) => {
+      const s = (a.sort_order || 0) - (b.sort_order || 0);
+      if (s !== 0) return s;
+      return String(b.updated_at || '').localeCompare(String(a.updated_at || ''));
+    });
+    return entries;
+  }
+
+  async getEncyclopediaEntry(projectId, entryId) {
+    const db = await this._db();
+    const result = await reqToPromise(
+      tx(db, STORE_ENCYCLOPEDIA, 'readonly').get([projectId, entryId])
+    );
+    return result ? EncyclopediaEntry.fromJSON(result) : null;
+  }
+
+  async saveEncyclopediaEntry(projectId, entry) {
+    const db = await this._db();
+    const e = entry instanceof EncyclopediaEntry ? entry : new EncyclopediaEntry(entry);
+    const data = {
+      ...e.toJSON(),
+      project_id: projectId,
+      updated_at: new Date().toISOString(),
+    };
+    await reqToPromise(tx(db, STORE_ENCYCLOPEDIA, 'readwrite').put(data));
+  }
+
+  /** 批量保存设定百科（单事务原子写入） */
+  async saveEncyclopediaEntries(projectId, entries) {
+    if (!entries || !entries.length) return;
+    const db = await this._db();
+    const transaction = db.transaction(STORE_ENCYCLOPEDIA, 'readwrite');
+    const store = transaction.objectStore(STORE_ENCYCLOPEDIA);
+    const now = new Date().toISOString();
+    for (const entry of entries) {
+      const e = entry instanceof EncyclopediaEntry ? entry : new EncyclopediaEntry(entry);
+      const data = {
+        ...e.toJSON(),
+        project_id: projectId,
+        updated_at: now,
+      };
+      store.put(data);
+    }
+    return new Promise((resolve, reject) => {
+      transaction.oncomplete = () => resolve();
+      transaction.onerror = () => reject(transaction.error);
+      transaction.onabort = () => reject(transaction.error || new Error('批量保存百科词条被中止'));
+    });
+  }
+
+  async deleteEncyclopediaEntry(projectId, entryId) {
+    const db = await this._db();
+    await reqToPromise(
+      tx(db, STORE_ENCYCLOPEDIA, 'readwrite').delete([projectId, entryId])
+    );
+  }
+
+  async searchEncyclopedia(projectId, query, filter = {}) {
+    const q = (query || '').trim();
+    if (!q) return [];
+    // 先拉全部（可加 type 预过滤），再内存做权重打分 + 文本匹配
+    const all = await this.listEncyclopediaEntries(projectId, { type: filter.type });
+    const qLower = q.toLowerCase();
+    const qWords = qLower.split(/\s+/).filter(Boolean);
+    const results = [];
+    for (const entry of all) {
+      // tag 预过滤
+      if (filter.tags && filter.tags.length) {
+        const tagSet = new Set(filter.tags);
+        if (!(entry.tags || []).some(t => tagSet.has(t))) continue;
+      }
+      let score = 0;
+      const hits = [];
+      // name 命中（权重最高）
+      const nameLower = String(entry.name || '').toLowerCase();
+      if (nameLower.includes(qLower)) {
+        score += 100;
+        hits.push({ field: 'name', text: entry.name });
+      } else {
+        for (const w of qWords) { if (nameLower.includes(w)) { score += 50; hits.push({ field: 'name', text: entry.name }); break; } }
+      }
+      // aliases 命中
+      const aliases = entry.aliases || [];
+      for (const a of aliases) {
+        const al = String(a).toLowerCase();
+        if (al.includes(qLower)) { score += 70; hits.push({ field: 'aliases', text: a }); break; }
+        let aliasMatch = false;
+        for (const w of qWords) { if (al.includes(w)) { score += 35; hits.push({ field: 'aliases', text: a }); aliasMatch = true; break; } }
+        if (aliasMatch) break;
+      }
+      // tags 命中
+      const tags = entry.tags || [];
+      for (const t of tags) {
+        const tl = String(t).toLowerCase();
+        if (tl.includes(qLower)) { score += 50; hits.push({ field: 'tags', text: t }); break; }
+        let tagMatch = false;
+        for (const w of qWords) { if (tl.includes(w)) { score += 25; hits.push({ field: 'tags', text: t }); tagMatch = true; break; } }
+        if (tagMatch) break;
+      }
+      // summary 命中
+      const summaryLower = String(entry.summary || '').toLowerCase();
+      if (summaryLower.includes(qLower)) {
+        score += 40;
+        hits.push({ field: 'summary', text: entry.summary });
+      } else {
+        for (const w of qWords) { if (summaryLower.includes(w)) { score += 20; hits.push({ field: 'summary', text: entry.summary }); break; } }
+      }
+      // content 命中（权重最低，但内容长所以命中次数多）
+      const contentLower = String(entry.content || '').toLowerCase();
+      let contentHitCount = 0;
+      if (contentLower.includes(qLower)) contentHitCount += 3;
+      for (const w of qWords) {
+        const re = new RegExp(w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
+        const m = contentLower.match(re);
+        if (m) contentHitCount += m.length;
+      }
+      if (contentHitCount > 0) {
+        score += Math.min(30, contentHitCount * 5);
+        hits.push({ field: 'content', text: (entry.content || '').slice(0, 120) });
+      }
+      if (score > 0) results.push({ entry, score, hits });
+    }
+    // 按分数降序
+    results.sort((a, b) => b.score - a.score);
+    if (filter.limit && filter.limit > 0) results.length = Math.min(results.length, filter.limit);
+    return results;
+  }
+
   // ---------- 导入导出 ----------
 
   async exportVault(projectId) {
@@ -341,7 +503,8 @@ export class IndexedDBBackend extends IStorageBackend {
     const volumes = await this.listVolumes(projectId);
     const characters = await this.listCharacters(projectId);
     const worldSettings = await this.listWorldSettings(projectId);
-    return { project, chapters, hooks, volumes, characters, worldSettings };
+    const encyclopedia = await this.listEncyclopediaEntries(projectId);
+    return { project, chapters, hooks, volumes, characters, worldSettings, encyclopedia };
   }
 
   /** 把内存数据导入为新项目（避免 id 冲突） */
@@ -355,6 +518,7 @@ export class IndexedDBBackend extends IStorageBackend {
     for (const v of data.volumes || []) await this.saveVolume(newId, v);
     for (const c of data.characters || []) await this.saveCharacter(newId, c);
     for (const w of data.worldSettings || []) await this.saveWorldSetting(newId, w);
+    for (const e of data.encyclopedia || []) await this.saveEncyclopediaEntry(newId, e);
     return newId;
   }
 }

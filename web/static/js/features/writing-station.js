@@ -37,6 +37,7 @@
     showRoles: true,
     showSettings: true,
     showHooks: true,
+    showEncyclopedia: true,
     showSearch: true,
     showWritingGoal: true,
     showAIToolbar: true,
@@ -106,6 +107,13 @@
       atQueryMode: false,
       atTab: '角色',
     };
+    function debounce(fn, wait = 200) {
+      let t = null;
+      return function (...a) {
+        clearTimeout(t);
+        t = setTimeout(() => fn.apply(this, a), wait);
+      };
+    }
     // 重置今日写作字数（如果是新的一天）
     if (state.goal.date !== todayStr()) {
       state.goal = { daily: state.goal.daily || 6000, today: 0, date: todayStr() };
@@ -172,6 +180,10 @@
             <input type="text" id="ws-search-input" placeholder="🔍 搜索设定百科（角色/地点/功法/物品）…" />
             <div class="ws-search-results" id="ws-search-results"></div>
           </div>
+          <div class="ws-panel" id="ws-panel-encyclopedia" data-panel="encyclopedia">
+            <div class="ws-panel-title">📚 设定百科速览</div>
+            <div class="ws-panel-body" id="ws-panel-encyclopedia-body"><p class="ws-empty">写作时会自动识别正文中的设定词条，可点击「📚 全览」打开完整设定百科</p></div>
+          </div>
           <div class="ws-panel" id="ws-panel-hooks" data-panel="hooks">
             <div class="ws-panel-title">🪝 伏笔提醒</div>
             <div class="ws-panel-body"><p class="ws-empty">本章暂无关联伏笔</p></div>
@@ -221,6 +233,8 @@
     const panelHooks = container.querySelector('#ws-panel-hooks');
     const panelRoles = container.querySelector('#ws-panel-roles');
     const panelSettings = container.querySelector('#ws-panel-settings');
+    const panelEncyclopedia = container.querySelector('#ws-panel-encyclopedia');
+    const panelEncyclopediaBody = container.querySelector('#ws-panel-encyclopedia-body');
     const searchWrap = container.querySelector('#ws-search');
     const searchInput = container.querySelector('#ws-search-input');
     const searchResults = container.querySelector('#ws-search-results');
@@ -229,6 +243,35 @@
     const atList = container.querySelector('#ws-at-list');
 
     state.atPopoverEl = atPopover;
+
+    // ---------- 百科词条异步加载（真实 data，写入 state.vocab 兼容老逻辑）----------
+    state.encyEntries = [];
+    function loadEncyclopedia() {
+      const pid2 = getProjectId();
+      if (!pid2) return Promise.resolve();
+      const stg = DT().storage;
+      if (!stg || typeof stg.listEncyclopediaEntries !== 'function') return Promise.resolve();
+      return Promise.resolve(stg.listEncyclopediaEntries(pid2)).then(entries => {
+        state.encyEntries = entries || [];
+        // 回填到 vocab，保持 @提及 等老逻辑可用
+        const roles = [], places = [], items = [], arts = [];
+        for (const e of state.encyEntries) {
+          const pack = { id: e.id, name: e.name, brief: e.summary || '' };
+          switch (e.type) {
+            case 'character': roles.push(pack); break;
+            case 'place': places.push(pack); break;
+            case 'item': items.push(pack); break;
+            case 'skill': arts.push(pack); break;
+          }
+        }
+        if (roles.length) state.vocab.roles = roles;
+        if (places.length) state.vocab.places = places;
+        if (items.length) state.vocab.items = items;
+        if (arts.length) state.vocab.arts = arts;
+      }).catch(err => {
+        console.warn('[ws] 加载设定百科失败，回退到默认 mock 词汇：', err);
+      });
+    }
 
     // ---------- 应用视图配置显示/隐藏 ----------
     applyConfig();
@@ -242,6 +285,7 @@
       panelRoles.style.display = c.showRoles ? '' : 'none';
       panelSettings.style.display = c.showSettings ? '' : 'none';
       panelHooks.style.display = c.showHooks ? '' : 'none';
+      panelEncyclopedia.style.display = c.showEncyclopedia ? '' : 'none';
       searchWrap.style.display = c.showSearch ? '' : 'none';
       container.querySelector('#ws-bottom-bar').style.display = c.showWritingGoal ? '' : 'none';
       aiFloat.style.display = c.showAIToolbar ? '' : 'none';
@@ -254,10 +298,13 @@
         [state.chapters, state.volumes] = await Promise.all([
           DT().storage.listChapters(pid),
           DT().storage.listVolumes(pid),
+          loadEncyclopedia(), // 并行加载百科词条
         ]);
         state.chapters = state.chapters || [];
         state.volumes = (state.volumes || []).sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
         renderList();
+        // 章节/百科加载完成后重扫右侧，因为现在有真实 vocab 了
+        scanAndUpdateSidebar(true);
       } catch (err) {
         console.error('[ws] 加载失败', err);
         listEl.innerHTML = `<p class="dt-empty-hint dt-error">加载失败：${esc(err.message || err)}</p>`;
@@ -686,6 +733,147 @@
             }).join('');
         }
       }
+      // 设定百科速览（调用 encyclopedia.js 暴露的 DTEncyclopediaPanel）
+      if (state.config.showEncyclopedia) {
+        try {
+          const Features = window.DreamTaleFeatures;
+          const panelAPI = Features && typeof Features.DTEncyclopediaPanel === 'function'
+            ? Features.DTEncyclopediaPanel({
+                pid: getProjectId(),
+                entries: state.encyEntries,
+                content: state.currentCh ? state.currentCh.content || '' : '',
+              })
+            : null;
+          if (panelAPI) {
+            panelEncyclopediaBody.innerHTML = panelAPI.panelHTML;
+            if (typeof panelAPI.bindHandlers === 'function') {
+              panelAPI.bindHandlers(panelEncyclopediaBody, (entryId) => {
+                // 点击条目 → 弹出 mini 详情抽屉（或跳转到完整百科）
+                const entry = state.encyEntries.find(e => e.id === entryId);
+                if (!entry) return;
+                openEncyclopediaMini(entry);
+              });
+            }
+            // 绑定 mini 搜索
+            const miniSearch = panelEncyclopediaBody.querySelector('[data-act="ency-search"]');
+            if (miniSearch) {
+              const origBind = panelAPI && panelAPI.bindHandlers;
+              miniSearch.addEventListener('input', debounce(() => {
+                const q = miniSearch.value.trim().toLowerCase();
+                const slot = panelEncyclopediaBody.querySelector('[data-slot="ency-list"]');
+                if (!slot) return;
+                const all = state.encyEntries || [];
+                let filtered = !q ? all : all.filter(e =>
+                  String(e.name || '').toLowerCase().includes(q)
+                  || (e.aliases || []).some(a => String(a).toLowerCase().includes(q))
+                  || (e.tags || []).some(t => String(t).toLowerCase().includes(q))
+                  || String(e.summary || '').toLowerCase().includes(q)
+                );
+                if (filtered.length === 0) {
+                  slot.innerHTML = `<div class="ws-ency-empty"><p>没有匹配「${esc(q)}」的设定</p></div>`;
+                } else {
+                  // 重绘 mini 列表（命中计数按 q）
+                  const out = [];
+                  for (const e of filtered.slice(0, 40)) {
+                    const nameLower = String(e.name || '').toLowerCase();
+                    let count = q ? (nameLower.includes(q) ? 1 : 0) : 0;
+                    const typeColor = (e.type === 'character' ? '#e74c3c' : e.type === 'place' ? '#3498db'
+                      : e.type === 'skill' ? '#2ecc71' : e.type === 'faction' ? '#9b59b6'
+                      : e.type === 'event' ? '#f39c12' : e.type === 'item' ? '#1abc9c'
+                      : e.type === 'concept' ? '#e67e22' : '#7f8c8d');
+                    const typeIcon = (e.type === 'character' ? '👤' : e.type === 'place' ? '📍'
+                      : e.type === 'skill' ? '⚔️' : e.type === 'faction' ? '🏛️'
+                      : e.type === 'event' ? '📅' : e.type === 'item' ? '💎'
+                      : e.type === 'concept' ? '💡' : '📁');
+                    out.push(`<div class="ws-ency-item" data-entry-id="${esc(e.id)}">
+                      <span class="ws-ency-item-type" style="color:${typeColor};">${typeIcon}</span>
+                      <div class="ws-ency-item-main">
+                        <div class="ws-ency-item-name">${esc(e.name)}
+                          ${e.aliases && e.aliases.length ? `<span class="ws-ency-item-alias">（${esc(e.aliases[0])}）</span>` : ''}
+                        </div>
+                        ${e.summary ? `<div class="ws-ency-item-summary">${esc(e.summary.slice(0, 40))}</div>` : ''}
+                      </div>
+                      ${q && count ? `<span class="ws-ency-item-count">命中</span>` : ''}
+                    </div>`);
+                  }
+                  slot.innerHTML = out.join('');
+                  slot.querySelectorAll('[data-entry-id]').forEach(el => {
+                    el.addEventListener('click', () => {
+                      const eid = el.getAttribute('data-entry-id');
+                      const en = state.encyEntries.find(x => x.id === eid);
+                      if (en) openEncyclopediaMini(en);
+                    });
+                  });
+                }
+                const sum = panelEncyclopediaBody.querySelector('.ws-ency-total-count');
+                if (sum) sum.textContent = `共 ${filtered.length} 条`;
+              }, 150));
+            }
+          } else {
+            panelEncyclopediaBody.innerHTML = '<p class="ws-empty">设定百科模块尚未就绪</p>';
+          }
+        } catch (err) {
+          console.warn('[ws] 渲染百科速览失败：', err);
+          panelEncyclopediaBody.innerHTML = `<p class="ws-empty">渲染失败：${esc(err.message || err)}</p>`;
+        }
+      }
+    }
+
+    // ---------- 百科 mini 详情弹窗（起点式抽屉式浮层）----------
+    let _encyMiniOverlay = null;
+    function openEncyclopediaMini(entry) {
+      if (_encyMiniOverlay) _encyMiniOverlay.remove();
+      const typeColor = (entry.type === 'character' ? '#e74c3c' : entry.type === 'place' ? '#3498db'
+        : entry.type === 'skill' ? '#2ecc71' : entry.type === 'faction' ? '#9b59b6'
+        : entry.type === 'event' ? '#f39c12' : entry.type === 'item' ? '#1abc9c'
+        : entry.type === 'concept' ? '#e67e22' : '#7f8c8d');
+      const typeLabel = (entry.type === 'character' ? '角色' : entry.type === 'place' ? '地点'
+        : entry.type === 'skill' ? '功法' : entry.type === 'faction' ? '势力'
+        : entry.type === 'event' ? '事件' : entry.type === 'item' ? '物品'
+        : entry.type === 'concept' ? '概念' : '其他');
+      const typeIcon = (entry.type === 'character' ? '👤' : entry.type === 'place' ? '📍'
+        : entry.type === 'skill' ? '⚔️' : entry.type === 'faction' ? '🏛️'
+        : entry.type === 'event' ? '📅' : entry.type === 'item' ? '💎'
+        : entry.type === 'concept' ? '💡' : '📁');
+      const tagsHTML = (entry.tags || []).map(t => `<span class="ws-ency-chip">${esc(t)}</span>`).join('');
+      const aliasesHTML = entry.aliases && entry.aliases.length ? `<div class="ws-ency-meta-line"><span class="ws-ency-meta-k">别名</span><span>${esc(entry.aliases.join(' / '))}</span></div>` : '';
+      const firstHTML = entry.first_appear_ch ? `<div class="ws-ency-meta-line"><span class="ws-ency-meta-k">首次登场</span><span>${esc(entry.first_appear_ch)}</span></div>` : '';
+      const relHTML = entry.related_entries && entry.related_entries.length ? `<div class="ws-ency-meta-line"><span class="ws-ency-meta-k">关联</span><span>${esc(entry.related_entries.join(' / '))}</span></div>` : '';
+      _encyMiniOverlay = document.createElement('div');
+      _encyMiniOverlay.className = 'ws-ency-mini-overlay';
+      _encyMiniOverlay.innerHTML = `
+        <div class="ws-ency-mini-card">
+          <div class="ws-ency-mini-head">
+            <span class="ws-ency-mini-type" style="background:${typeColor}22;color:${typeColor};">${typeIcon} ${typeLabel}</span>
+            <button class="ws-ency-mini-close" data-act="close" aria-label="关闭">×</button>
+          </div>
+          <h3 class="ws-ency-mini-title">${esc(entry.name)}</h3>
+          <div class="ws-ency-meta-block">
+            ${aliasesHTML}${firstHTML}${relHTML}
+            ${tagsHTML ? `<div class="ws-ency-meta-line"><span class="ws-ency-meta-k">标签</span><span>${tagsHTML}</span></div>` : ''}
+          </div>
+          ${entry.summary ? `<blockquote class="ws-ency-mini-summary">${esc(entry.summary)}</blockquote>` : ''}
+          ${entry.content ? `<div class="ws-ency-mini-content">${esc(entry.content).replace(/\n/g, '<br/>')}</div>` : ''}
+          <div class="ws-ency-mini-foot">
+            <button class="ws-btn ws-btn-xs ws-btn-ghost" data-act="open-full">📚 打开完整百科</button>
+            <button class="ws-btn ws-btn-xs ws-btn-ghost" data-act="cite">@ 引用到正文</button>
+          </div>
+        </div>`;
+      _encyMiniOverlay.addEventListener('click', e => {
+        if (e.target === _encyMiniOverlay) { _encyMiniOverlay.remove(); _encyMiniOverlay = null; }
+      });
+      _encyMiniOverlay.querySelector('[data-act="close"]').addEventListener('click', () => {
+        _encyMiniOverlay.remove(); _encyMiniOverlay = null;
+      });
+      _encyMiniOverlay.querySelector('[data-act="open-full"]').addEventListener('click', () => {
+        _encyMiniOverlay.remove(); _encyMiniOverlay = null;
+        DT().router.navigate('#/encyclopedia');
+      });
+      _encyMiniOverlay.querySelector('[data-act="cite"]').addEventListener('click', () => {
+        insertAtToEditor(`[[${typeLabel}:${entry.name}]]`, 0);
+        _encyMiniOverlay.remove(); _encyMiniOverlay = null;
+      });
+      document.body.appendChild(_encyMiniOverlay);
     }
 
     function insertAtToEditor(inserted, rangeLen) {
@@ -832,6 +1020,7 @@
           <div class="dt-modal-header"><h3>⚙️ 视图配置</h3><button class="dt-modal-close" data-act="close">×</button></div>
           <div class="dt-modal-body">
             <div class="ws-config-list">
+              <label><input type="checkbox" data-k="showEncyclopedia" ${c.showEncyclopedia?'checked':''}> 显示「设定百科速览」面板（起点式 mini 百科）</label>
               <label><input type="checkbox" data-k="showRoles" ${c.showRoles?'checked':''}> 显示「本章角色速览」面板</label>
               <label><input type="checkbox" data-k="showSettings" ${c.showSettings?'checked':''}> 显示「本章设定速览」面板</label>
               <label><input type="checkbox" data-k="showHooks" ${c.showHooks?'checked':''}> 显示「伏笔提醒」面板</label>

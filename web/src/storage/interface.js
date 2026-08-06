@@ -128,6 +128,49 @@ export class IStorageBackend {
     }
   }
 
+  // ---------- 设定百科 Encyclopedia ----------
+
+  /** 列出某项目下所有设定百科词条（可按 type / tag 过滤，可选） */
+  async listEncyclopediaEntries(_projectId, _filter = {}) {
+    throw new NotSupportedError(`${this.name}: listEncyclopediaEntries 未实现`);
+  }
+
+  /** 获取单个设定百科词条 */
+  async getEncyclopediaEntry(_projectId, _entryId) {
+    throw new NotSupportedError(`${this.name}: getEncyclopediaEntry 未实现`);
+  }
+
+  /** 保存（创建或更新）设定百科词条 */
+  async saveEncyclopediaEntry(_projectId, _entry) {
+    throw new NotSupportedError(`${this.name}: saveEncyclopediaEntry 未实现`);
+  }
+
+  /** 批量保存设定百科词条（原子事务） */
+  async saveEncyclopediaEntries(_projectId, _entries) {
+    // 默认降级：逐个调用单条 save；子类可 override 为原子事务
+    if (!_entries || !_entries.length) return;
+    for (const e of _entries) {
+      await this.saveEncyclopediaEntry(_projectId, e);
+    }
+  }
+
+  /** 删除设定百科词条 */
+  async deleteEncyclopediaEntry(_projectId, _entryId) {
+    throw new NotSupportedError(`${this.name}: deleteEncyclopediaEntry 未实现`);
+  }
+
+  /**
+   * 全文搜索设定百科：匹配 name / aliases / summary / content / tags，
+   * 按命中权重排序（name 命中 > aliases 命中 > summary 命中 > content 命中）。
+   * @param {string} projectId
+   * @param {string} query  搜索关键词（可为空字符串时返回空数组）
+   * @param {object} [filter]  可选 { type, tags:[], limit }
+   * @returns {Promise<Array<{entry, score, hits:Array<{field,text}>}>>}
+   */
+  async searchEncyclopedia(_projectId, _query, _filter = {}) {
+    throw new NotSupportedError(`${this.name}: searchEncyclopedia 未实现`);
+  }
+
   // ---------- 导入导出 ----------
 
   /** 导出整个 Vault 为 ZIP Blob */
