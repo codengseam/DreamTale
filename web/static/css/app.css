@@ -348,9 +348,11 @@ p { margin: 0 0 0.6em; }
 
 #app-view {
   min-height: 100%;
-  padding: 24px 32px;
-  max-width: 1200px;
-  margin: 0 auto;
+  padding: 12px 16px;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  box-sizing: border-box;
 }
 
 #app-view:empty::before {

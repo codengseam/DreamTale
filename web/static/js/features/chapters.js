@@ -470,6 +470,7 @@
           theme: DT().state.theme || 'light',
           onChange: (text) => onContentChange(text),
           onSave: () => { flushSave(); return true; },
+          plainText: true, // ← 小说纯文本写作模式：隐藏 Markdown 格式按钮和三模式切换
         });
       } catch (err) {
         console.error('[chapters] 编辑器创建失败:', err);
