@@ -285,13 +285,17 @@ class MarkdownEditor {
     right.appendChild(counter);
     this._counterEl = counter;
 
-    // 保存指示
+    // 保存指示（含状态图标：保存中脉冲点 / 已保存对勾）
     const saveFlag = document.createElement('span');
     saveFlag.className = 'de-save-flag';
     saveFlag.setAttribute('aria-live', 'polite');
-    saveFlag.textContent = '';
+    saveFlag.innerHTML =
+      '<span class="de-save-icon" aria-hidden="true"></span>' +
+      '<span class="de-save-text"></span>';
     right.appendChild(saveFlag);
     this._saveFlagEl = saveFlag;
+    this._saveFlagIconEl = saveFlag.querySelector('.de-save-icon');
+    this._saveFlagTextEl = saveFlag.querySelector('.de-save-text');
 
     toolbar.appendChild(right);
     root.appendChild(toolbar);
@@ -342,22 +346,36 @@ class MarkdownEditor {
 
   // ============ 事件绑定 ============
   _bindEvents() {
-    // 输入：防抖触发 onChange + 即时更新字数与预览
+    // 输入：防抖触发 onChange + 即时更新字数与预览 + 写作聚焦淡入工具栏
     this._onInput = () => {
       this.value = this._textarea.value;
       this._updateWordCount();
       this._updatePreview();
       this._scheduleEmitChange();
       this._monitorAtQuery();
+      // 写作聚焦：连续输入时淡出工具栏（减少干扰），停下后恢复
+      if (this._rootEl) this._rootEl.classList.add('writing-focus');
+      clearTimeout(this._focusTimer);
+      this._focusTimer = setTimeout(() => {
+        if (this._rootEl) this._rootEl.classList.remove('writing-focus');
+      }, 900);
     };
     this._textarea.addEventListener('input', this._onInput);
 
-    // 失焦：立即触发保存与 onChange
+    // 失焦：立即触发保存与 onChange + 清除写作聚焦
     this._onBlur = () => {
       this._flushChange();
       this._emitSave();
+      clearTimeout(this._focusTimer);
+      if (this._rootEl) this._rootEl.classList.remove('writing-focus');
     };
     this._textarea.addEventListener('blur', this._onBlur);
+
+    // 聚焦时快速恢复工具栏（便于操作按钮）
+    this._onFocus = () => {
+      if (this._rootEl) this._rootEl.classList.remove('writing-focus');
+    };
+    this._textarea.addEventListener('focus', this._onFocus);
 
     // 快捷键
     this._onKeyDown = (e) => this._handleKeyDown(e);
@@ -518,24 +536,65 @@ class MarkdownEditor {
 
   _emitSave() {
     if (!this.onSave) return;
-    this._flashSaveFlag('已保存');
+    // 先显示"保存中"脉冲，回调结束后显示"已保存"微弹
+    this._setSaveState('saving', '保存中…');
     try {
-      this.onSave(this.value);
+      const result = this.onSave(this.value);
+      // 支持回调返回 Promise
+      Promise.resolve(result)
+        .then(()  => this._setSaveState('saved', '已保存'))
+        .catch(() => this._setSaveState('error', '保存失败'));
     } catch (err) {
       console.error('[DreamTale Editor] onSave 回调异常:', err);
-      this._flashSaveFlag('保存失败');
+      this._setSaveState('error', '保存失败');
     }
   }
 
+  /**
+   * 设置保存状态视觉反馈
+   * @param {'saving'|'saved'|'error'|''} state
+   * @param {string} text 文本提示
+   */
+  _setSaveState(state, text = '') {
+    const el = this._saveFlagEl;
+    if (!el) return;
+    // 先清理旧状态类
+    el.classList.remove('saving', 'saved', 'error');
+    this._saveFlagIconEl.className = 'de-save-icon';
+    this._saveFlagTextEl.textContent = text;
+
+    if (state === 'saving') {
+      el.classList.add('saving', 'visible');
+      this._saveFlagIconEl.classList.add('de-save-dot');
+    } else if (state === 'saved') {
+      el.classList.add('saved', 'visible');
+      this._saveFlagIconEl.classList.add('de-save-check');
+      this._saveFlagIconEl.textContent = '✓';
+      // 1.8s 后淡出
+      clearTimeout(this._saveFlagTimer);
+      this._saveFlagTimer = setTimeout(() => {
+        el.classList.remove('visible', 'saved');
+        this._saveFlagIconEl.textContent = '';
+        this._saveFlagTextEl.textContent = '';
+      }, 1800);
+    } else if (state === 'error') {
+      el.classList.add('error', 'visible');
+      this._saveFlagIconEl.classList.add('de-save-check');
+      this._saveFlagIconEl.textContent = '!';
+      clearTimeout(this._saveFlagTimer);
+      this._saveFlagTimer = setTimeout(() => {
+        el.classList.remove('visible', 'error');
+        this._saveFlagIconEl.textContent = '';
+        this._saveFlagTextEl.textContent = '';
+      }, 3000);
+    } else {
+      el.classList.remove('visible');
+    }
+  }
+
+  // 兼容旧方法名（避免外部调用断裂）
   _flashSaveFlag(text) {
-    if (!this._saveFlagEl) return;
-    this._saveFlagEl.textContent = text;
-    this._saveFlagEl.classList.add('visible');
-    clearTimeout(this._saveFlagTimer);
-    this._saveFlagTimer = setTimeout(() => {
-      this._saveFlagEl.classList.remove('visible');
-      this._saveFlagEl.textContent = '';
-    }, 1800);
+    this._setSaveState('saved', text || '已保存');
   }
 
   // ============ 模式切换 ============
