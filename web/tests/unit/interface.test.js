@@ -48,6 +48,7 @@ describe('IStorageBackend 默认实现', () => {
     { name: 'saveCharacter', args: ['p1', {}], method: 'saveCharacter' },
     { name: 'listWorldSettings', args: ['p1'], method: 'listWorldSettings' },
     { name: 'saveWorldSetting', args: ['p1', {}], method: 'saveWorldSetting' },
+    // saveCharacters / saveWorldSettings 有默认实现（逐条调用单条 save），不强制抛错
     { name: 'exportVault', args: ['p1'], method: 'exportVault' },
     { name: 'importVault', args: [new Blob(['x'])], method: 'importVault' },
   ];
@@ -66,14 +67,14 @@ describe('IStorageBackend 默认实现', () => {
     });
   }
 
-  it('共 19 个抽象方法（防止漏测新增方法）', () => {
-    // 统计 IStorageBackend 原型上的 async 方法数量
+  it('共 21 个抽象方法（防止漏测新增方法）', () => {
+    // 统计 IStorageBackend 原型上的方法数量（含批量 saveCharacters / saveWorldSettings）
     const proto = IStorageBackend.prototype;
     const methods = Object.getOwnPropertyNames(proto).filter(
       (n) => n !== 'constructor' && typeof proto[n] === 'function'
     );
     // name 是 getter（在实例上），不计入原型方法
-    expect(methods.length).toBe(19);
+    expect(methods.length).toBe(21);
   });
 });
 
