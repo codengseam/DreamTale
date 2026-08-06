@@ -237,6 +237,19 @@ class MarkdownEditor {
       });
       actions.appendChild(btn);
     });
+    EXTERNAL_HOOKS.extraToolbarButtons.forEach((act) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'de-btn de-btn-' + act.name;
+      btn.title = act.title;
+      btn.textContent = act.label;
+      btn.dataset.action = act.name;
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        act.onClick(this);
+      });
+      actions.appendChild(btn);
+    });
     toolbar.appendChild(actions);
 
     // 工具栏：模式切换 + 字数
@@ -335,6 +348,7 @@ class MarkdownEditor {
       this._updateWordCount();
       this._updatePreview();
       this._scheduleEmitChange();
+      this._monitorAtQuery();
     };
     this._textarea.addEventListener('input', this._onInput);
 
@@ -376,6 +390,12 @@ class MarkdownEditor {
     if (e.key === 'Tab') {
       e.preventDefault();
       this._insertAtCursor('  ', '');
+    }
+    // @提及监测
+    if (e.key === '@' && EXTERNAL_HOOKS.atMention) {
+      setTimeout(() => {
+        EXTERNAL_HOOKS.atMention.show({ el: this._textarea, query: '', editor: this });
+      }, 50);
     }
   }
 
@@ -423,6 +443,39 @@ class MarkdownEditor {
       this._textarea.selectionStart,
       this._textarea.selectionEnd
     );
+  }
+
+  // ============ @提及查询监测 ============
+  _monitorAtQuery() {
+    if (!EXTERNAL_HOOKS.atMention) return;
+    const ta = this._textarea;
+    const caret = ta.selectionStart;
+    const textBefore = ta.value.slice(0, caret);
+    const atIndex = textBefore.lastIndexOf('@');
+    if (atIndex === -1) {
+      EXTERNAL_HOOKS.atMention.hide && EXTERNAL_HOOKS.atMention.hide();
+      return;
+    }
+    const between = textBefore.slice(atIndex + 1);
+    if (/\s/.test(between)) {
+      EXTERNAL_HOOKS.atMention.hide && EXTERNAL_HOOKS.atMention.hide();
+      return;
+    }
+    EXTERNAL_HOOKS.atMention.show({ el: ta, query: between, editor: this });
+  }
+
+  // ============ 外部插入文本（替换 @查询） ============
+  insertAtText(inserted, rangeLen) {
+    const ta = this._textarea;
+    const caret = ta.selectionStart;
+    const start = caret - rangeLen;
+    const before = ta.value.slice(0, start);
+    const after = ta.value.slice(caret);
+    ta.value = before + inserted + after;
+    const newCaret = start + inserted.length;
+    ta.focus();
+    ta.setSelectionRange(newCaret, newCaret);
+    ta.dispatchEvent(new Event('input', { bubbles: true }));
   }
 
   // ============ 字数统计 ============
@@ -595,6 +648,24 @@ class MarkdownEditor {
     this.onSave = null;
   }
 }
+
+// ============ 外部插件钩子（供 writing-station 挂载） ============
+const EXTERNAL_HOOKS = {
+  // @提及：输入 @ 时触发，返回 {show(popoverEl, position), hide(), onSelect(cb)}
+  atMention: null,
+  // 工具栏扩展按钮：Array<{name, label, title, onClick(editorInstance)}>
+  extraToolbarButtons: [],
+  // 内容变更回调（防抖后触发，含增量 diff）
+  onContentProcessed: null,
+};
+export function registerHook(name, value) {
+  if (name === 'extraToolbarButtons' && Array.isArray(value)) {
+    EXTERNAL_HOOKS.extraToolbarButtons.push(...value);
+  } else {
+    EXTERNAL_HOOKS[name] = value;
+  }
+}
+export function getHooks() { return EXTERNAL_HOOKS; }
 
 // ============ 工厂函数 ============
 /**
