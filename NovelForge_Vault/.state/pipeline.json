@@ -5,21 +5,20 @@
   "_comment_current_stage": "current_stage 枚举：idle=空闲 / architect=章纲生成 / hook_auditor=伏笔校验 / context_composer=上下文拼装 / writer=正文生成 / polisher=润色 / state_update=状态落地",
   "_comment_stages": "stages 是完整流水线阶段顺序，state_update 完成后回到 idle 等待下一章",
   "_comment_history": "history 记录最近 N 章的流水线执行轨迹，用于排查卡顿",
-  "current_chapter": 0,
+  "current_chapter": 5,
   "current_volume": 1,
   "mode": "novel",
   "current_stage": "idle",
-  "stages": [
-    "architect",
-    "hook_auditor",
-    "context_composer",
-    "writer",
-    "polisher",
-    "state_update"
+  "stages": ["architect", "hook_auditor", "context_composer", "writer", "polisher", "state_update"],
+  "history": [
+    {"chapter": 1, "stage_completed": "state_update", "timestamp": "2026-08-07T09:00:00"},
+    {"chapter": 2, "stage_completed": "state_update", "timestamp": "2026-08-07T09:05:00"},
+    {"chapter": 3, "stage_completed": "state_update", "timestamp": "2026-08-07T09:10:00"},
+    {"chapter": 4, "stage_completed": "state_update", "timestamp": "2026-08-07T09:15:00"},
+    {"chapter": 5, "stage_completed": "state_update", "timestamp": "2026-08-07T09:20:00"}
   ],
-  "history": [],
   "last_recap_chapter": 0,
-  "last_drift_check_chapter": 0,
-  "archived_scenes": [],
-  "last_consistency_check_chapter": 0
+  "last_drift_check_chapter": 5,
+  "archived_scenes": ["ch_001_萧炎_斗气测试三段", "ch_001_萧薰儿_四段隐藏实力", "ch_002_萧炎_穿越者秘密", "ch_005_萧炎_三年之约宣言", "ch_005_纳兰嫣然_退婚羞辱"],
+  "last_consistency_check_chapter": 5
 }

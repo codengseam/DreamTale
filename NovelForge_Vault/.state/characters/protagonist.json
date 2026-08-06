@@ -13,52 +13,99 @@
   "_comment_arc_stage": "arc_stage 对应 protagonist.md 的弧光阶段表",
   "character_id": "protagonist",
   "basic": {
-    "name": "",
-    "aliases": [],
+    "name": "萧炎",
+    "aliases": ["小炎子", "炎儿"],
     "role": "protagonist",
-    "age": null,
-    "appearance_keywords": []
+    "age": 15,
+    "appearance_keywords": ["清秀脸庞", "漆黑眸子", "瘦削有肌肉", "常穿萧家弟子服", "指甲嵌掌心习惯"]
   },
   "location": {
-    "current": "",
-    "last_updated_ch": 0,
-    "recent_trajectory": []
+    "current": "加玛帝国·乌坦城·萧家·正厅门口（刚宣布三年之约走出来）",
+    "last_updated_ch": 5,
+    "recent_trajectory": ["ch_001:萧家演武场", "ch_002:萧家后山悬崖", "ch_003:萧家正厅外偷听", "ch_004:萧家正厅", "ch_005:萧家正厅"]
   },
   "power_level": {
-    "realm": "",
-    "realm_progress": 0,
-    "abilities": [],
-    "limitations": [],
-    "next_breakthrough": {}
+    "realm": "斗之气三段（低级）",
+    "realm_progress": 20,
+    "abilities": ["基础拳脚功夫", "萧家基础斗气功法（黄阶高级）"],
+    "limitations": ["斗气倒退中无法突破", "连普通七段族人都打不过", "运转斗气时经脉隐隐刺痛"],
+    "next_breakthrough": {
+      "condition": "激活纳戒中药老灵魂，开始修炼焚诀/接受药老指导",
+      "expected_chapter": 8,
+      "target_realm": "斗之气四段"
+    }
   },
-  "inventory": [],
+  "inventory": [
+    {"item": "黑色纳戒", "source": "母亲遗物", "status": "随身携带，未激活", "hook_id": "H-003"},
+    {"item": "休书副本（休纳兰嫣然）", "source": "ch_005 亲笔书写", "status": "已交给纳兰嫣然", "hook_id": "H-004"}
+  ],
   "emotion": {
-    "current": "",
-    "last_updated_ch": 0,
-    "recent_arc": [],
-    "baseline": ""
+    "current": "屈辱中燃着倔强怒火（刚立三年之约）",
+    "last_updated_ch": 5,
+    "recent_arc": [
+      {"ch": 1, "emotion": "自嘲+隐忍"},
+      {"ch": 2, "emotion": "挫败+发泄+被薰儿安慰后微暖"},
+      {"ch": 3, "emotion": "疑惑+不安"},
+      {"ch": 4, "emotion": "震惊+危机感"},
+      {"ch": 5, "emotion": "屈辱中燃着倔强怒火"}
+    ],
+    "baseline": "隐忍（默认底色：穿越者灵魂让他比同龄人沉得住气）"
   },
-  "relationships": [],
+  "relationships": [
+    {"id": "sup_02_萧战", "relation": "父子", "attitude": 100, "last_change_ch": 1, "note": "父亲，不惜一切要保护的人"},
+    {"id": "sup_01_萧薰儿", "relation": "青梅竹马", "attitude": 95, "last_change_ch": 2, "note": "不离不弃，萧炎心中最柔软的羁绊"},
+    {"id": "ant_01_纳兰嫣然", "relation": "前未婚妻（已休）", "attitude": -100, "last_change_ch": 5, "note": "三年之约打脸目标"},
+    {"id": "ant_02_萧家三长老", "relation": "族中长老", "attitude": -50, "last_change_ch": 5, "note": "势利眼，帮云岚宗压萧战"},
+    {"id": "extra_萧媚", "relation": "族妹", "attitude": -20, "last_change_ch": 1, "note": "当年仰慕天才萧炎，现在跟着嘲讽"},
+    {"id": "extra_萧宁", "relation": "族弟", "attitude": -40, "last_change_ch": 1, "note": "爱慕薰儿，处处针对萧炎"},
+    {"id": "extra_葛叶", "relation": "云岚宗使者", "attitude": -30, "last_change_ch": 5, "note": "退婚执行者"}
+  ],
   "knowledge": {
-    "known_facts": [],
-    "unknown_facts": [],
-    "misconceptions": []
+    "known_facts": [
+      "自己是穿越者（灵魂来自地球）",
+      "母亲早逝，留下黑色纳戒",
+      "斗气三年从斗者倒退到三段",
+      "薰儿4-6岁时每晚帮自己温养经脉",
+      "纳兰嫣然上门退婚，自己已写下休书休了她",
+      "三年后必须上云岚宗挑战纳兰嫣然",
+      "斗气大陆等级制度：斗之气→斗者→…→斗帝",
+      "功法/斗技天地玄黄分级"
+    ],
+    "unknown_facts": [
+      "斗气倒退是因为纳戒中药老吸收（H-003真相）",
+      "薰儿是古族千金（H-002真相）",
+      "萧家是远古萧族后裔（H-007真相）",
+      "魂殿/魂族的存在",
+      "焚诀功法的存在",
+      "炼药师具体怎么修炼"
+    ],
+    "misconceptions": [
+      "以为自己斗气倒退是「修炼走火入魔留下的后遗症」（实际是药老吸的）"
+    ]
   },
-  "unresolved_personal_arcs": [],
+  "unresolved_personal_arcs": [
+    {"id": "arc_001", "goal": "三年之内击败纳兰嫣然", "progress": 0, "current_status": "三年之约刚立下，起点"},
+    {"id": "arc_002", "goal": "查明斗气倒退真相", "progress": 0, "current_status": "毫无线索，以为是走火入魔"},
+    {"id": "arc_003", "goal": "保护萧战和萧家不受欺负", "progress": 10, "current_status": "刚替萧战接下退婚屈辱，意识到自己必须变强"}
+  ],
   "goals": {
-    "short_term": "",
-    "long_term": "",
-    "secret_goal": ""
+    "short_term": "在下次家族测试（ch_010左右）前至少恢复到斗之气五段，不让三长老借题发挥赶自己出家族",
+    "long_term": "三年后云岚宗之约，打败纳兰嫣然，挣回萧家的尊严",
+    "secret_goal": "潜意识里想找到母亲的死因（自己都还没意识到，后期展开）"
   },
   "language_fingerprint": {
-    "avg_sentence_length": 12,
-    "preferred_words": [],
-    "catchphrases": [],
+    "avg_sentence_length": 10,
+    "preferred_words": ["哼", "是吗", "可笑"],
+    "catchphrases": ["三十年河东，三十年河西，莫欺少年穷"],
     "forbidden_words": [],
-    "address_habits": {}
+    "address_habits": {
+      "萧战": "父亲",
+      "薰儿": "薰儿",
+      "纳兰嫣然": "纳兰嫣然（直呼其名，不叫嫣然）"
+    }
   },
-  "arc_stage": "",
-  "last_appeared_ch": 0,
+  "arc_stage": "1. 蒙昧",
+  "last_appeared_ch": 5,
   "first_appear_ch": 1,
   "status": "active"
 }
