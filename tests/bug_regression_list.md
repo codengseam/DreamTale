@@ -1039,3 +1039,77 @@
   4. EPUB 是听书场景的「最大公约数」格式——微信读书 / Apple Books / Voice Dream Reader / 得到 全部原生支持，章节结构可被 TTS 引擎准确识别；TXT 是兜底方案，无章节结构但所有听书软件都支持
 
 
+
+---
+
+## 写作引导页面 Markdown 预览未渲染（以纯文本 <pre> 形式展示）
+
+- **编号**：BUG-050
+- **首次出现**：2026-08-06
+- **类型**：前端渲染 / 上下文预算
+- **现象**：「大纲 → 写作引导」Tab 打开后，`大纲写作指南.md` 的内容以纯文本形式包裹在 `<pre>` 里展示。例如 `# 大纲写作指南 · NovelForge` 没有被渲染为一级标题，而是连同 `#` 标记一起原样显示。整份指南的列表、表格、加粗等 Markdown 语法均无效，用户体验与「编辑视图」无异。
+- **根因**：`web/static/js/features/outline.js` 在加载内置指南 MD 文本后，检测到 `window.marked` 不存在（`marked.min.js` 未加载或加载失败），就把原始 MD 文本直接塞进 `<pre>` 标签作为兜底，未实现任何降级渲染逻辑。
+- **修复**：
+  1. 在 `web/static/js/features/outline.js` 中新增 `simpleMarkdownFallback_guide(md)` 自定义 Markdown 渲染器，涵盖写作指南实际用到的语法：
+     - 标题：`# / ## / ### / ####` → `<h1-h4>`，剥去 `#` 前缀
+     - 加粗/斜体：`**粗**`、`*斜*`、`` `code` ``
+     - 无序列表：`- xxx` / `* xxx` → `<ul><li>`
+     - 有序列表：`1. xxx` → `<ol><li>`
+     - 表格：`| 列1 | 列2 |` 表头行 + `|---|---|` 分隔线 → `<table><thead><tbody>`
+     - 分隔线 `---` → `<hr>`
+     - 段落（连续非空行）→ `<p>`
+     - 特殊字符 `& < >` HTML escape
+  2. `renderOutlineGuide()` 在 fallback 分支用 `simpleMarkdownFallback_guide(content)` 替换原 `<pre>${content}</pre>`，并包裹在 `.markdown-body` 容器中，复用全站 Markdown 样式。
+- **涉及文件**：`web/static/js/features/outline.js`
+- **回归测试**：
+  - 浏览器 `evaluate` 断言：
+    1. `#/outline → 点击「✨ 写作引导」` 后，存在 `<h1>大纲写作指南 · NovelForge</h1>` 元素
+    2. 所有 heading 元素（h1/h2/h3/h4）的 `textContent` **不包含** `#` 字符
+    3. 页面中**不存在**包含原始 `#` 开头 MD 文本的 `<pre>` 元素
+    4. `<ul>`/`<ol>` 列表元素存在，说明列表渲染生效
+  - 人工截图：`screenshots/problem1-guide-md-fixed.png`
+- **教训**：
+  1. 对可选依赖（marked.js / highlight.js 等）的 fallback 不能是「直接展示原始文本」，至少要实现最常用的几条语法渲染，否则用户会以为功能坏了。
+  2. 前端功能接入时，要对依赖缺失的场景做 UI 级别的 smoke test（手动禁用该 JS 看页面是否还能正常用）。
+  3. 「内容型」模块（写作引导、说明文档）要优先保证渲染质量——文本不能正确分段/分层，信息密度下降 80%。
+
+---
+
+## 章节编写页面三栏布局错位（右栏漂浮到左侧，所有 .ws-right 之后规则未加载）
+
+- **编号**：BUG-051
+- **首次出现**：2026-08-06
+- **类型**：前端 / CSS 语法错误
+- **现象**：打开 `#/chapters` 章节编写页后，三栏布局完全错乱：右侧「设定百科速览 / 伏笔提醒 / 角色速览」面板（`.ws-right`）漂浮在左侧章节树区域，与 `.ws-left` 重叠；`.ws-word-float`（悬浮字数浮标）、`.ws-save-dot`（保存状态指示灯）、`.ws-bottom-bar`（底栏）等组件样式也全部缺失。点击具体章节进入编辑器后布局仍然异常。
+- **根因**：`web/static/css/writing-station.css` 第 524-527 行 `.ws-editor-wrap` 规则的 `background` 属性中，`radial-gradient(...)` 函数缺少**一个关闭括号 `)`**：
+
+  ```css
+  /* 修复前（错误）：radial-gradient( 打开后未关闭 */
+  background:
+    radial-gradient(ellipse at top,
+      color-mix(in srgb, var(--ws-accent) 3%, transparent) 0 0/100% 160px no-repeat,
+    var(--ws-bg);
+
+  /* 修复后（正确）：在 color-mix(...) 后补 ) 关闭 radial-gradient */
+  background:
+    radial-gradient(ellipse at top,
+      color-mix(in srgb, var(--ws-accent) 3%, transparent)) 0 0/100% 160px no-repeat,
+    var(--ws-bg);
+  ```
+
+  CSS 解析器在遇到未关闭的括号后，认为 `background` 属性值仍在继续，于是把后面**全部**内容（从 548 行 `.ws-word-float-card` 开始到文件末尾的 `.ws-right` / `.ws-search-box` / `.ws-panel` / `.ws-hook-item` / `.ws-ai-float` / `@media` 响应式等约 112 条规则）都吞进了这个属性值。结果是整个样式表实际只有 64 条顶级规则被解析，`.ws-right { grid-area: right }` 从未进入 CSSOM，右栏缺少 `grid-area` 声明，`.ws-shell` 的 grid 只能把它按源码顺序塞进 `left` 单元格，造成三栏布局错位。
+- **修复**：`web/static/css/writing-station.css` 第 526 行 `color-mix(...)` 表达式后补上 `)`，正确关闭 `radial-gradient()` 函数，后续全部规则即可被浏览器正常解析。
+- **涉及文件**：`web/static/css/writing-station.css`（第 524-527 行 `.ws-editor-wrap` 的 `background` 属性）
+- **回归测试**：
+  - 浏览器 `evaluate` 断言：
+    1. `writing-station.css` 解析得到的顶级规则总数 ≥ 170（修复前仅 64）
+    2. 规则集中存在选择器为 `.ws-right` 的规则（修复前 indexOf 返回 -1）
+    3. `.ws-right` 元素的 `getComputedStyle().gridArea === "right"`（修复前为 `"auto"`）
+    4. `.ws-right` 元素的 `offsetLeft > 600`（在 CSS Grid 容器正确的右栏位置，修复前 ≤ 300，与左栏重叠）
+    5. 还存在 `.ws-word-float-card` / `.ws-save-dot` / `.ws-panel` 等修复前被吞掉的规则
+  - 人工截图：`screenshots/problem2-writing-station-fixed.png`（显示三栏布局完整：章节树 / 编辑器 / 设定速览并列，无重叠）
+- **教训/沉淀**：
+  1. CSS 未关闭的括号/引号/注释是静默杀手——不会在控制台报错，只会让后续所有规则消失。浏览器 DevTools 的「样式表 → 规则总数」检查是定位此类问题的最快手段：`sheet.cssRules.length` 与人工估算不一致 ≡ 有语法错误。
+  2. 用了带多参数和嵌套函数的 CSS（`radial-gradient` + `color-mix` + 位置/大小简写）后，必须在写的时候数括号——「开一个就立刻写一个关闭的」，不要等逻辑写完再补。
+  3. 可复用的资产：以后新增 CSS 规则后，可在 CI 加一个极小的 smoke test：把 CSS 文本塞进临时 `<style>`，用 `sheet.cssRules.length` 与基线对比，异常就 fail，防止类似问题再次流入主分支。
+  4. CSS Grid 布局错乱时，先检查每个子项的 `grid-area` 是否都匹配父容器的 `grid-template-areas`：只要有一个子项的 `grid-area` 是 `auto`，它就会按 DOM 顺序自动排，布局就完全乱了。

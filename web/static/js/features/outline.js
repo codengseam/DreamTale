@@ -2093,6 +2093,103 @@ Ch018-020  卷末大爽点：逆袭（大）+ 打脸（卷级反派）+ 揭秘�
     const firstItem = sidebar.querySelector('.dt-guide-item');
     if (firstItem) firstItem.click();
 
+    // 极简 Markdown fallback（与 editor.js 保持一致，保证无 marked 时也能正常渲染）
+    function simpleMarkdownFallback_guide(md) {
+      const escapeHtml = (s) => s
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      const lines = String(md).split(/\r?\n/);
+      const out = [];
+      let inCode = false, codeBuf = [], inList = false, inTable = false, tableBuf = [];
+      const flushList = () => { if (inList) { out.push('</ul>'); inList = false; } };
+      const flushTable = () => {
+        if (inTable) {
+          if (tableBuf.length >= 2) {
+            const header = tableBuf[0];
+            const alignRow = tableBuf[1];
+            const isAlignRow = /^\s*\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)*\|?\s*$/.test(alignRow.replace(/\s+/g, ''));
+            if (isAlignRow) {
+              const ths = header.split('|').filter(s => s.trim()).map(s => `<th>${inlineFmt_guide(s.trim())}</th>`).join('');
+              const rows = tableBuf.slice(2).map(row => {
+                const tds = row.split('|').filter(s => s.trim()).map(s => `<td>${inlineFmt_guide(s.trim())}</td>`).join('');
+                return `<tr>${tds}</tr>`;
+              }).join('');
+              out.push(`<table><thead><tr>${ths}</tr></thead><tbody>${rows}</tbody></table>`);
+            } else {
+              tableBuf.forEach(r => out.push('<p>' + inlineFmt_guide(r) + '</p>'));
+            }
+          } else {
+            tableBuf.forEach(r => out.push('<p>' + inlineFmt_guide(r) + '</p>'));
+          }
+          tableBuf = []; inTable = false;
+        }
+      };
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        if (/^```/.test(line)) {
+          flushList(); flushTable();
+          if (inCode) {
+            out.push('<pre><code>' + escapeHtml(codeBuf.join('\n')) + '</code></pre>');
+            codeBuf = []; inCode = false;
+          } else { inCode = true; }
+          continue;
+        }
+        if (inCode) { codeBuf.push(line); continue; }
+        if (/^\s*$/.test(line)) { flushList(); flushTable(); continue; }
+        if (/^(\*\*\*|---|___)\s*$/.test(line)) {
+          flushList(); flushTable(); out.push('<hr>'); continue;
+        }
+        // 任务列表 / 无序列表
+        const task = line.match(/^\s*[-*+]\s+\[([ xX])\]\s+(.*)$/);
+        if (task) {
+          if (!inList) { out.push('<ul>'); inList = true; }
+          const checked = task[1].toLowerCase() === 'x';
+          out.push(`<li style="list-style:none;"><input type="checkbox" disabled ${checked?'checked':''}/> ${inlineFmt_guide(task[2])}</li>`);
+          continue;
+        }
+        const ul = line.match(/^\s*[-*+]\s+(.*)$/);
+        if (ul) {
+          if (!inList) { out.push('<ul>'); inList = true; }
+          out.push('<li>' + inlineFmt_guide(ul[1]) + '</li>'); continue;
+        }
+        const ol = line.match(/^\s*\d+\.\s+(.*)$/);
+        if (ol) {
+          flushList();
+          out.push('<ol><li>' + inlineFmt_guide(ol[1]) + '</li></ol>'); continue;
+        }
+        // 标题
+        const h = line.match(/^(#{1,6})\s+(.*)$/);
+        if (h) {
+          flushList(); flushTable();
+          const lvl = h[1].length;
+          out.push('<h' + lvl + '>' + inlineFmt_guide(h[2]) + '</h' + lvl + '>');
+          continue;
+        }
+        // 引用
+        const q = line.match(/^>\s?(.*)$/);
+        if (q) {
+          flushList(); flushTable();
+          out.push('<blockquote>' + inlineFmt_guide(q[1]) + '</blockquote>'); continue;
+        }
+        // 表格
+        if (line.includes('|') && line.trim().startsWith('|')) {
+          flushList(); inTable = true; tableBuf.push(line); continue;
+        } else {
+          flushTable();
+        }
+        out.push('<p>' + inlineFmt_guide(line) + '</p>');
+      }
+      flushList(); flushTable();
+      if (inCode) out.push('<pre><code>' + escapeHtml(codeBuf.join('\n')) + '</code></pre>');
+      return out.join('\n');
+      function inlineFmt_guide(s) {
+        return escapeHtml(s)
+          .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+          .replace(/([^*])\*([^*\n]+)\*(?!\*)/g, '$1<em>$2</em>')
+          .replace(/`([^`]+)`/g, '<code>$1</code>')
+          .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+      }
+    }
+
     function loadGuideContent(cat, key, meta) {
       // 直接使用内嵌的完整 Markdown 内容（不依赖存储后端 readFile，任何场景都能打开）
       const sourceMd = cat === 'outline' ? OUTLINE_GUIDE_MD : CHAPTER_GUIDE_MD;
@@ -2108,11 +2205,12 @@ Ch018-020  卷末大爽点：逆袭（大）+ 打脸（卷级反派）+ 揭秘�
         } else if (global.marked) {
           html = global.marked(md);
         } else {
-          html = `<pre style="white-space:pre-wrap;font-size:12.5px;">${esc(md)}</pre>`;
+          // 无 marked 时，用内置简单渲染器（正常显示 H1~H6、列表、表格、引用等）
+          html = simpleMarkdownFallback_guide(md);
         }
       } catch (e) {
-        console.warn('[outline] marked 渲染失败，降级为纯文本:', e);
-        html = `<pre style="white-space:pre-wrap;font-size:12.5px;">${esc(md)}</pre>`;
+        console.warn('[outline] marked 渲染失败，降级为内置渲染器:', e);
+        html = simpleMarkdownFallback_guide(md);
       }
 
       // 2. 写入 DOM

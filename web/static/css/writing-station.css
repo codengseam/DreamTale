@@ -523,7 +523,7 @@
   padding: 14px 20px;
   background:
     radial-gradient(ellipse at top,
-      color-mix(in srgb, var(--ws-accent) 3%, transparent) 0 0/100% 160px no-repeat,
+      color-mix(in srgb, var(--ws-accent) 3%, transparent)) 0 0/100% 160px no-repeat,
     var(--ws-bg);
   position: relative;
 }
