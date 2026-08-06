@@ -324,35 +324,146 @@
       });
     }
 
+    // ---------- 全屏 / 专注模式切换 ----------
+    let isZenMode = false;     // CSS 沉浸态
+    let isTypewriter = false;  // 打字机模式
+    let isFsApi = false;       // Fullscreen API 实际全屏
+
+    function toggleZen() {
+      isZenMode = !isZenMode;
+      updateWriterModes();
+    }
+    function toggleTypewriter() {
+      isTypewriter = !isTypewriter;
+      updateWriterModes();
+    }
+    function asyncToggleFullscreen() {
+      const el = mainEl;
+      if (!el) return;
+      const fs = document.fullscreenElement || document.webkitFullscreenElement;
+      try {
+        if (!fs) {
+          const req = el.requestFullscreen || el.webkitRequestFullscreen;
+          if (req) { req.call(el); isFsApi = true; }
+          else { isZenMode = true; } // 不支持 Fullscreen API 时 fallback 到 CSS 沉浸
+        } else {
+          const exit = document.exitFullscreen || document.webkitExitFullscreen;
+          if (exit) exit.call(document);
+          isFsApi = false;
+        }
+      } catch (e) {
+        console.warn('[chapters] 全屏切换失败，fallback 到 CSS 沉浸:', e);
+        isZenMode = !fs;
+      }
+      updateWriterModes();
+    }
+    function updateWriterModes() {
+      if (!mainEl) return;
+      mainEl.classList.toggle('dt-fullscreen-zen', isZenMode || isFsApi);
+      mainEl.classList.toggle('dt-typewriter', isTypewriter);
+      document.body.classList.toggle('dt-app-shell-zen', isZenMode || isFsApi);
+      // 同步按钮 pressed 态
+      const zenBtn = mainEl.querySelector('[data-act="toggle-zen"]');
+      const fsBtn  = mainEl.querySelector('[data-act="toggle-fullscreen"]');
+      const twBtn  = mainEl.querySelector('[data-act="toggle-typewriter"]');
+      if (zenBtn) zenBtn.setAttribute('aria-pressed', String(isZenMode || isFsApi));
+      if (fsBtn)  fsBtn.setAttribute('aria-pressed', String(isFsApi));
+      if (twBtn)  twBtn.setAttribute('aria-pressed', String(isTypewriter));
+    }
+    // ESC 退出沉浸态
+    function onDocKey(e) {
+      if ((e.key === 'Escape') && (isZenMode || isTypewriter)) {
+        isZenMode = false;
+        isTypewriter = false;
+        updateWriterModes();
+      }
+      // 快捷键：Ctrl/Cmd + Shift + F 全屏；Ctrl/Cmd+. 打字机；Ctrl/Cmd+Enter 沉浸
+      const ctrl = e.ctrlKey || e.metaKey;
+      if (ctrl && e.shiftKey && (e.key === 'F' || e.key === 'f')) {
+        e.preventDefault(); asyncToggleFullscreen();
+      } else if (ctrl && (e.key === 'Enter')) {
+        e.preventDefault(); toggleZen();
+      } else if (ctrl && (e.key === '.')) {
+        e.preventDefault(); toggleTypewriter();
+      }
+    }
+
     // ---------- 渲染右侧编辑器 ----------
     function renderEditor() {
       if (!currentCh) {
-        mainEl.innerHTML = '<div class="dt-ch-empty"><p>请从左侧选择一个章节开始写作</p></div>';
+        mainEl.innerHTML = `<div class="dt-ch-empty">
+          <div class="dt-ch-empty-icon">✍️</div>
+          <p>请从左侧选择一个章节开始写作</p>
+          <p style="font-size:12px;margin-top:4px;">或点击右上角 <b>+ 新章</b> 创建你的第一章</p>
+        </div>`;
         return;
       }
       // 销毁旧编辑器
       destroyEditor();
+      const volName = (volumes.find((v) => v.vol_no === currentCh.vol_no) || {}).vol_name || '未命名卷';
+      const curWords = currentCh.words || 0;
+      // 默认目标字数（每章 6000 字，可后续改设定）
+      const GOAL_WORDS = 6000;
+      const isGoalReached = curWords >= GOAL_WORDS;
+      const percent = Math.min(100, Math.round((curWords / GOAL_WORDS) * 100));
+
       mainEl.innerHTML = `
+        <!-- 悬浮工具栏（毛玻璃胶囊） -->
+        <div class="dt-ch-float-toolbar" role="toolbar" aria-label="写作模式">
+          <button type="button" data-act="toggle-typewriter" title="打字机模式 (Ctrl/⌘+.)" aria-pressed="false">⌨</button>
+          <button type="button" data-act="toggle-zen" title="沉浸/专注模式 (Ctrl/⌘+Enter)" aria-pressed="false">🧘</button>
+          <div class="dt-ft-sep"></div>
+          <button type="button" data-act="toggle-fullscreen" title="全屏写作 (Ctrl/⌘+Shift+F)" aria-pressed="false">⛶</button>
+          <button type="button" data-act="save" title="立即保存 (Ctrl/⌘+S)">💾</button>
+          <button type="button" data-act="goto-reader" title="跳转到阅读模式">📖</button>
+          <div class="dt-ft-sep"></div>
+          <button type="button" data-act="delete" title="删除本章">🗑</button>
+        </div>
+
+        <!-- 编辑头部：元信息 -->
         <div class="dt-ch-header">
           <div class="dt-ch-header-left">
-            <span class="dt-ch-header-vol">第 ${esc(currentCh.vol_no)} 卷</span>
-            <span class="dt-ch-header-ch">第 ${esc(currentCh.ch_no)} 章</span>
-            <input type="text" class="dt-ch-title-input" data-f="title" value="${esc(currentCh.title || '')}" placeholder="章节标题" />
+            <div class="dt-ch-breadcrumb">
+              <span>作品</span>
+              <span class="dt-ch-bc-sep">›</span>
+              <span>第 ${esc(currentCh.vol_no)} 卷 · ${esc(volName)}</span>
+              <span class="dt-ch-bc-sep">›</span>
+              <span class="dt-ch-bc-current">第 ${esc(currentCh.ch_no)} 章</span>
+            </div>
+            <div class="dt-ch-title-wrap">
+              <input type="text" class="dt-ch-title-input" data-f="title" value="${esc(currentCh.title || '')}" placeholder="输入本章标题…" />
+            </div>
           </div>
           <div class="dt-ch-header-right">
-            <span class="dt-ch-words" data-f="words">字数：${currentCh.words || 0}</span>
-            <select class="dt-ch-status" data-f="status">
-              <option value="draft" ${currentCh.status === 'draft' ? 'selected' : ''}>草稿</option>
-              <option value="published" ${currentCh.status === 'published' ? 'selected' : ''}>已发布</option>
-            </select>
-            <button class="dt-btn dt-btn-sm" data-act="save">保存</button>
-            <button class="dt-btn dt-btn-sm dt-btn-danger" data-act="delete">删除</button>
+            <!-- 保存指示 -->
+            <div class="dt-ch-save-indicator" data-f="autosave-hint" title="自动保存状态">
+              <span class="dt-dot"></span><span>就绪</span>
+            </div>
+            <!-- 状态切换胶囊 -->
+            <div class="dt-ch-status-switch" role="group" aria-label="章节状态">
+              <button type="button" class="dt-ch-st-draft ${currentCh.status === 'draft' ? 'active' : ''}" data-f="status" data-val="draft">草稿</button>
+              <button type="button" class="dt-ch-st-pub ${currentCh.status === 'published' ? 'active' : ''}" data-f="status" data-val="published">已发布</button>
+            </div>
+            <!-- 字数胶囊 -->
+            <div class="dt-ch-word-count ${isGoalReached ? 'dt-ch-word-goal' : ''}" title="目标 ${GOAL_WORDS} 字 · 已完成 ${percent}%">
+              <span>目标 ${percent}%</span>
+              <span class="dt-ch-word-num">${curWords.toLocaleString()}</span>
+              <span>字</span>
+            </div>
           </div>
         </div>
-        <div class="dt-ch-editor-host"></div>
-        <div class="dt-ch-autosave-hint" data-f="autosave-hint"></div>`;
 
-      const host = mainEl.querySelector('.dt-ch-editor-host');
+        <!-- 编辑器挂载区 -->
+        <div class="dt-ch-editor-wrap" data-f="editor-host"></div>
+
+        <!-- 悬浮右下角字数（全屏模式增强） -->
+        <div class="dt-ch-float-wordcount" aria-hidden="false">
+          第 <strong>${esc(currentCh.vol_no)}</strong> 卷 · 第 <strong>${esc(currentCh.ch_no)}</strong> 章 ·
+          <strong>${curWords.toLocaleString()}</strong> 字 ·
+          <span style="color:${isGoalReached ? 'var(--success)' : 'var(--ink-muted)'}">${percent}%</span>
+        </div>`;
+
+      const host = mainEl.querySelector('[data-f="editor-host"]');
       try {
         editor = global.DreamTaleEditor.create(host, {
           initialValue: currentCh.content || '',
@@ -362,7 +473,7 @@
         });
       } catch (err) {
         console.error('[chapters] 编辑器创建失败:', err);
-        host.innerHTML = `<textarea class="dt-ch-fallback" style="width:100%;min-height:60vh;">${esc(currentCh.content || '')}</textarea>`;
+        host.innerHTML = `<textarea class="dt-ch-fallback" style="width:100%;min-height:60vh;padding:24px;">${esc(currentCh.content || '')}</textarea>`;
         const ta = host.querySelector('.dt-ch-fallback');
         ta.addEventListener('input', () => onContentChange(ta.value));
       }
@@ -376,19 +487,47 @@
         }
       });
 
-      // 状态切换
-      const statusSel = mainEl.querySelector('[data-f="status"]');
-      statusSel.addEventListener('change', async () => {
-        if (!currentCh) return;
-        currentCh.status = statusSel.value;
-        await flushSave();
-        renderList();
+      // 状态切换（按钮胶囊）
+      mainEl.querySelectorAll('[data-f="status"]').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          if (!currentCh) return;
+          const val = btn.getAttribute('data-val') || 'draft';
+          currentCh.status = val;
+          // 切换 active 态
+          mainEl.querySelectorAll('[data-f="status"]').forEach((b) => {
+            b.classList.toggle('active', b.getAttribute('data-val') === val);
+          });
+          await flushSave();
+          renderList();
+        });
       });
 
-      // 保存按钮
-      mainEl.querySelector('[data-act="save"]').addEventListener('click', () => flushSave());
-      // 删除按钮
-      mainEl.querySelector('[data-act="delete"]').addEventListener('click', () => confirmDelete(currentCh));
+      // 保存 / 删除 / 跳转阅读 / 模式切换按钮（悬浮工具栏 + 头部可能的按钮）
+      bindAct('save', () => flushSave());
+      bindAct('delete', () => confirmDelete(currentCh));
+      bindAct('goto-reader', () => {
+        if (DT().router && typeof DT().router.go === 'function') {
+          DT().router.go('#/reader');
+        } else if (window.DreamTale && window.DreamTale.router) {
+          window.DreamTale.router.go('#/reader');
+        } else {
+          window.location.hash = '#/reader';
+        }
+      });
+      bindAct('toggle-zen', toggleZen);
+      bindAct('toggle-fullscreen', asyncToggleFullscreen);
+      bindAct('toggle-typewriter', toggleTypewriter);
+
+      // 同步按钮 pressed 态
+      updateWriterModes();
+    }
+
+    function bindAct(act, cb) {
+      mainEl.querySelectorAll(`[data-act="${act}"]`).forEach((b) => {
+        if (b.dataset.bound) return;
+        b.dataset.bound = '1';
+        b.addEventListener('click', (e) => { e.preventDefault(); cb && cb(); });
+      });
     }
 
     function destroyEditor() {
@@ -405,14 +544,40 @@
       // 实时字数统计
       const words = editor ? editor.getWordCount() : (text ? text.length : 0);
       currentCh.words = words;
-      const wordsEl = mainEl.querySelector('[data-f="words"]');
-      if (wordsEl) wordsEl.textContent = '字数：' + words;
+      updateWordsUI(words);
       markDirty();
+    }
+
+    function updateWordsUI(words) {
+      const GOAL_WORDS = 6000;
+      const percent = Math.min(100, Math.round((words / GOAL_WORDS) * 100));
+      const isGoalReached = words >= GOAL_WORDS;
+      // 头部字数胶囊
+      const wc = mainEl.querySelector('.dt-ch-word-count');
+      if (wc) {
+        wc.classList.toggle('dt-ch-word-goal', isGoalReached);
+        const num = wc.querySelector('.dt-ch-word-num');
+        if (num) num.textContent = words.toLocaleString();
+        // 目标百分比
+        const first = wc.firstElementChild;
+        if (first && first.textContent.startsWith('目标')) first.textContent = `目标 ${percent}%`;
+      }
+      // 悬浮字数
+      const fw = mainEl.querySelector('.dt-ch-float-wordcount');
+      if (fw) {
+        const strongs = fw.querySelectorAll('strong');
+        if (strongs && strongs[2]) strongs[2].textContent = words.toLocaleString();
+        const last = fw.lastElementChild || fw.childNodes[fw.childNodes.length - 1];
+        if (last && last.style) {
+          last.style.color = isGoalReached ? 'var(--success)' : 'var(--ink-muted)';
+          last.textContent = `${percent}%`;
+        }
+      }
     }
 
     function markDirty() {
       isDirty = true;
-      setAutosaveHint('未保存');
+      setAutosaveHint('未保存', 'dirty');
       clearTimeout(autoSaveTimer);
       autoSaveTimer = setTimeout(() => { flushSave(); }, 1500);
     }
@@ -420,15 +585,18 @@
     function setAutosaveHint(text, type) {
       const el = mainEl.querySelector('[data-f="autosave-hint"]');
       if (el) {
-        el.textContent = text;
-        el.className = 'dt-ch-autosave-hint' + (type ? ' dt-autosave-' + type : '');
+        // type: dirty (未保存黄) / saving (保存中蓝) / ok (已保存绿) / error (红)
+        el.className = 'dt-ch-save-indicator' + (type ? ' dt-' + (type === 'dirty' ? 'saving' : (type === 'ok' ? 'saved' : type)) : '');
+        const span = el.querySelector('span:last-child') || el.lastChild;
+        if (span && span.textContent !== undefined) span.textContent = text;
+        else el.innerHTML = `<span class="dt-dot"></span><span>${text}</span>`;
       }
     }
 
     async function flushSave() {
       if (!currentCh || !isDirty) return;
       clearTimeout(autoSaveTimer);
-      setAutosaveHint('保存中…');
+      setAutosaveHint('保存中…', 'saving');
       try {
         const payload = {
           ...currentCh,
@@ -439,13 +607,14 @@
         currentCh.title = payload.title;
         await DT().storage.saveChapter(pid, payload);
         isDirty = false;
-        setAutosaveHint('已自动保存 ' + new Date().toLocaleTimeString(), 'ok');
+        const now = new Date().toLocaleTimeString();
+        setAutosaveHint('已保存 ' + now, 'ok');
         // 静默更新列表标题
         const li = listEl.querySelector(`[data-ch-key="${esc(chapterKey(currentCh))}"] .dt-ch-item-title`);
         if (li) li.textContent = payload.title || '未命名';
       } catch (err) {
         console.error('[chapters] 自动保存失败:', err);
-        setAutosaveHint('保存失败：' + (err.message || err), 'error');
+        setAutosaveHint('保存失败', 'error');
         DT().notify('章节保存失败：' + (err.message || err), 'error');
       }
     }
@@ -544,6 +713,9 @@
     layout.querySelector('[data-act="new"]').addEventListener('click', newChapter);
     layout.querySelector('[data-act="refresh"]').addEventListener('click', reload);
 
+    // 全局快捷键（沉浸态+模式切换）
+    document.addEventListener('keydown', onDocKey);
+
     // 离开页面前保存
     window.addEventListener('beforeunload', beforeUnload);
     function beforeUnload() {
@@ -556,7 +728,10 @@
     // 清理钩子：挂到容器上，便于切换视图时调用
     container._dtChaptersCleanup = () => {
       clearTimeout(autoSaveTimer);
+      document.removeEventListener('keydown', onDocKey);
       window.removeEventListener('beforeunload', beforeUnload);
+      // 退出任何可能的沉浸态
+      document.body.classList.remove('dt-app-shell-zen', 'dt-app-shell-auto-hide');
       destroyEditor();
     };
 
