@@ -1,7 +1,16 @@
 {
   "_comment": "章节字数历史。记录每章实际成稿字数，用于均值计算与节奏控制。",
   "_comment_purpose": "architect 写新章纲时参考最近 N 章均值设定字数目标；polisher 校验成稿字数是否在 ±10% 区间。",
-  "_comment_chapters_entry": "chapters 数组每条含：ch=章号 / vol=卷号 / word_count=字数 / target=目标字数 / mode=novel|shortform",
-  "version": "1.0.0",
-  "chapters": []
+  "chapters": [
+    {"chapter": 1, "word_count": 2800, "completed_date": "2026-08-07"},
+    {"chapter": 2, "word_count": 2700, "completed_date": "2026-08-07"},
+    {"chapter": 3, "word_count": 2600, "completed_date": "2026-08-07"},
+    {"chapter": 4, "word_count": 2700, "completed_date": "2026-08-07"},
+    {"chapter": 5, "word_count": 3000, "completed_date": "2026-08-07"}
+  ],
+  "summary": {
+    "total_words": 13800,
+    "avg_words": 2760,
+    "consistent_with_baseline": true
+  }
 }

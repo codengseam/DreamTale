@@ -1,11 +1,12 @@
 {
   "_comment": "节奏曲线。追踪每章爽点等级与压抑等级，防止节奏失衡。",
   "_comment_purpose": "state_update 每章追加一条；alert_rules 触发告警时 architect 介入调整下章章纲。",
-  "_comment_chapters_entry": "chapters 数组每条含：ch=章号 / satisfaction=爽点等级1-5 / suppression=压抑等级1-5 / note=备注",
-  "_comment_alert_rules": "alert_rules.consecutive_low_satisfaction=连续N章爽点≤2则告警（读者要弃书）；consecutive_high_suppression=连续N章压抑≥4则告警（读者要抑郁）",
-  "chapters": [],
-  "alert_rules": {
-    "consecutive_low_satisfaction": 3,
-    "consecutive_high_suppression": 3
-  }
+  "_comment_emotional_turn": "emotional_turn 枚举：sink=下沉 / rise=上扬 / flat=持平 / inflection=大转折",
+  "chapters": [
+    {"chapter": 1, "chapter_title": "陨落的天才", "coolness_score": 1, "depression_score": 4, "emotional_turn": "sink", "overall_note": "演武场羞辱，建立废柴处境"},
+    {"chapter": 2, "chapter_title": "斗气大陆", "coolness_score": 3, "depression_score": 2, "emotional_turn": "rise", "overall_note": "世界渗透+薰儿送温暖"},
+    {"chapter": 3, "chapter_title": "客人", "coolness_score": 1, "depression_score": 3, "emotional_turn": "sink", "overall_note": "云岚宗人来了气氛诡异"},
+    {"chapter": 4, "chapter_title": "云岚宗", "coolness_score": 2, "depression_score": 3, "emotional_turn": "sink", "overall_note": "纳兰嫣然身份公开压迫感升级"},
+    {"chapter": 5, "chapter_title": "聚气散", "coolness_score": 4, "depression_score": 3, "emotional_turn": "inflection", "overall_note": "三年之约宣言，压抑后反弹大爽点"}
+  ]
 }

@@ -1,11 +1,112 @@
 {
-  "_comment": "金手指强度曲线。追踪主角金手指在每章的强度等级，防止战力崩坏。",
-  "_comment_purpose": "state_update 每章追加一条记录；alert_rules 触发告警时 hook_auditor 介入。",
-  "_comment_chapters_entry": "chapters 数组每条含：ch=章号 / level=金手指强度1-10 / bottleneck=是否有瓶颈 / note=备注",
-  "_comment_alert_rules": "alert_rules.consecutive_no_bottleneck=连续N章无瓶颈则告警（金手指可能失控）；single_chapter_jump=单章强度跳变超过N级则告警",
-  "chapters": [],
-  "alert_rules": {
-    "consecutive_no_bottleneck": 3,
-    "single_chapter_jump": 1
-  }
+  "_comment": "NovelForge 战力天花板曲线。按 tier 分层，每个 tier 含 tier_name、境界范围、基准战力分、描述、代表角色。",
+  "_comment_主角当前标注": "protagonist_current 标记 ch_005 结尾时主角所在 tier 和 score，注明特殊状态。",
+  "protagonist_current": {
+    "tier": 1,
+    "realm": "斗之气三段",
+    "score": 3,
+    "note": "斗气倒退中，实际底蕴远超三段（三年前斗者 tier 2）",
+    "last_updated_ch": 5
+  },
+  "tiers": [
+    {
+      "tier": 1,
+      "tier_name": "凡人",
+      "min_realm": "斗之气一段",
+      "max_realm": "斗之气九段",
+      "power_score_benchmark": "1-9",
+      "description": "尚未凝聚气旋，仅能运转微弱斗气，强身健体程度；斗之气九段巅峰=score 9，凝聚气旋突破斗者",
+      "notable_characters": ["萧炎（ch_005，三段=3）", "萧媚（七段=7）", "萧薰儿（压四段=4，实际>9）"]
+    },
+    {
+      "tier": 2,
+      "tier_name": "入门",
+      "min_realm": "斗者",
+      "max_realm": "九星斗者",
+      "power_score_benchmark": "10-30",
+      "description": "凝聚气旋，能真正运转斗气纱衣、使用斗技，为修行真正入门",
+      "notable_characters": ["纳兰嫣然（15岁天才，斗者≈20）"]
+    },
+    {
+      "tier": 3,
+      "tier_name": "精锐",
+      "min_realm": "斗师",
+      "max_realm": "九星斗师",
+      "power_score_benchmark": "30-60",
+      "description": "斗气外放成形，可掌御中高阶斗技，为乌坦城这种小城顶梁柱级战力",
+      "notable_characters": ["萧战（狂狮怒罡，≈45）", "葛叶（青木剑诀，≈40）"]
+    },
+    {
+      "tier": 4,
+      "tier_name": "强者",
+      "min_realm": "大斗师",
+      "max_realm": "九星大斗师",
+      "power_score_benchmark": "60-100",
+      "description": "斗气凝铠，能御空短距离，加玛帝国地方势力高层水准",
+      "notable_characters": ["萧宁父亲（估算此级）"]
+    },
+    {
+      "tier": 5,
+      "tier_name": "高手",
+      "min_realm": "斗灵",
+      "max_realm": "九星斗灵",
+      "power_score_benchmark": "100-200",
+      "description": "斗气实体化攻击，可长时间御空，加玛帝国一流高手水准",
+      "notable_characters": []
+    },
+    {
+      "tier": 6,
+      "tier_name": "宗师",
+      "min_realm": "斗王",
+      "max_realm": "九星斗王",
+      "power_score_benchmark": "200-500",
+      "description": "斗气化翼，真正意义上的大陆级强者，可震慑一方势力",
+      "notable_characters": ["纳兰桀（纳兰家）"]
+    },
+    {
+      "tier": 7,
+      "tier_name": "大宗",
+      "min_realm": "斗皇",
+      "max_realm": "九星斗皇",
+      "power_score_benchmark": "500-1500",
+      "description": "举手投足毁城灭寨，加玛帝国顶级战力（如云岚宗宗主）",
+      "notable_characters": ["云韵（云岚宗宗主）"]
+    },
+    {
+      "tier": 8,
+      "tier_name": "超凡",
+      "min_realm": "斗宗",
+      "max_realm": "九星斗宗",
+      "power_score_benchmark": "1500-5000",
+      "description": "踏空而行不假外物，寿元大增，大陆级超级宗门才能坐镇的存在",
+      "notable_characters": []
+    },
+    {
+      "tier": 9,
+      "tier_name": "入圣",
+      "min_realm": "斗尊",
+      "max_realm": "九转斗尊巅峰",
+      "power_score_benchmark": "5000-20000",
+      "description": "可破碎空间，中洲顶级势力话事人级，大陆金字塔尖",
+      "notable_characters": []
+    },
+    {
+      "tier": 10,
+      "tier_name": "半仙",
+      "min_realm": "斗圣",
+      "max_realm": "九转斗圣巅峰",
+      "power_score_benchmark": "20000-100000",
+      "description": "言出法随，开辟一方小世界，远古种族才能出的盖世人物",
+      "notable_characters": []
+    },
+    {
+      "tier": 11,
+      "tier_name": "神话",
+      "min_realm": "斗帝",
+      "max_realm": "斗帝",
+      "power_score_benchmark": "100000+",
+      "description": "超脱凡俗，万载不出；大陆传说级存在，可改写位面规则",
+      "notable_characters": ["炎帝萧炎（最终形态）"]
+    }
+  ]
 }

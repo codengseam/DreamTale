@@ -1,32 +1,14 @@
 {
   "_comment": "世界时间线。记录小说世界中发生的大事件，按世界时间排序。由 state_update Skill 维护。",
   "_comment_purpose": "作用：避免时间线穿帮（如某事件发生在某角色出生前），处理跨卷时间跨度。",
-  "_comment_era": "era 是世界纪元（如 '云隐历 1023 年'），world_date 是该纪元下的具体日期/时段",
-  "_comment_chapter_anchor": "chapter_anchor 是事件对应的章号，用于将世界时间与正文锚定",
-  "_comment_event_type": "event_type 枚举：character=角色相关 / faction=势力相关 / world=世界级 / foreshadow=伏笔事件",
   "version": "1.0.0",
-  "era": "",
-  "current_world_date": "",
-  "events": [
-    {
-      "event_id": "W-001",
-      "world_date": "",
-      "chapter_anchor": 1,
-      "event_type": "character",
-      "description": "示例：主角觉醒金手指",
-      "related_characters": [
-        "protagonist"
-      ],
-      "impact": ""
-    },
-    {
-      "event_id": "W-002",
-      "world_date": "建安五年春",
-      "chapter_anchor": 42,
-      "event_type": "world",
-      "description": "主角抵达青云宗",
-      "related_characters": [],
-      "impact": ""
-    }
+  "timeline": [
+    {"relative_day": 1, "event": "萧家年度成年测试，萧炎斗之气三段，全族嘲讽", "location": "萧家演武场", "involved_characters": ["萧炎", "萧媚", "萧薰儿", "三长老", "萧家族人"], "chapter_references": 1},
+    {"relative_day": 1, "event": "萧薰儿测试故意压到四段", "location": "萧家演武场", "involved_characters": ["萧薰儿"], "chapter_references": 1, "note": "H-002埋设，薰儿实际实力远超四段"},
+    {"relative_day": 1, "event": "萧炎后山悬崖独白，揭示穿越者身份", "location": "萧家后山悬崖", "involved_characters": ["萧炎", "萧薰儿"], "chapter_references": 2, "note": "薰儿送披风，回忆4-6岁温养经脉（H-006）"},
+    {"relative_day": 2, "event": "云岚宗葛叶长老+纳兰嫣然到访萧家", "location": "萧家正厅", "involved_characters": ["葛叶", "纳兰嫣然", "萧战", "三长老"], "chapter_references": 3},
+    {"relative_day": 2, "event": "纳兰嫣然身份公开：云岚宗少宗主候选人，15岁斗者", "location": "萧家正厅", "involved_characters": ["纳兰嫣然", "葛叶", "萧战", "萧炎", "三长老"], "chapter_references": 4, "note": "H-008炼药师线埋下，葛叶提到聚气散"},
+    {"relative_day": 2, "event": "葛叶当众提出解除婚约，萧战震怒攥碎玉石杯，被三长老喝止", "location": "萧家正厅", "involved_characters": ["葛叶", "纳兰嫣然", "萧战", "三长老", "萧炎"], "chapter_references": 5},
+    {"relative_day": 2, "event": "萧炎出场：休掉纳兰嫣然 + 立下三年之约宣言（三十年河东）", "location": "萧家正厅", "involved_characters": ["萧炎", "纳兰嫣然", "葛叶", "萧战", "三长老", "萧薰儿（门外）"], "chapter_references": 5, "note": "H-004三年之约正式立，全书名场面"}
   ]
 }
