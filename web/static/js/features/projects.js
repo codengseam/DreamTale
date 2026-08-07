@@ -28,6 +28,45 @@
     return global.DreamTale;
   }
 
+  // 11 种网文类型模板：对应 genre-X-SLUG-vault.zip
+  const GENRE_TEMPLATES = [
+    { code: '01', slug: 'xuanhuan', label: '玄幻类', icon: '🗡️', hint: '斗破苍穹、遮天、完美世界' },
+    { code: '02', slug: 'xiuzhen', label: '修真仙侠类', icon: '☁️', hint: '凡人修仙传、一念永恒' },
+    { code: '03', slug: 'wangyou', label: '网游游戏类', icon: '🎮', hint: '全职高手、网游之近战法师' },
+    { code: '04', slug: 'naodong', label: '脑洞系统无限流', icon: '🔮', hint: '诡秘之主、全球高武、无限恐怖' },
+    { code: '05', slug: 'dushi', label: '都市类', icon: '🏙️', hint: '重生之都市修仙、大时代1994' },
+    { code: '06', slug: 'kehuan', label: '科幻类', icon: '🚀', hint: '三体、流浪地球、间客' },
+    { code: '07', slug: 'lishi', label: '历史架空类', icon: '📜', hint: '庆余年、赘婿、宰执天下' },
+    { code: '08', slug: 'mori', label: '末日废土类', icon: '☢️', hint: '全球进化、末日蟑螂、第一序列' },
+    { code: '09', slug: 'dianjing', label: '电竞竞技类', icon: '🏆', hint: '全职高手、电竞魔王集结营' },
+    { code: '10', slug: 'nüpin', label: '女频类', icon: '💕', hint: '甄嬛传、知否、偷偷藏不住' },
+    { code: '11', slug: 'zhongtian', label: '种田经营类', icon: '🌾', hint: '随身装着一口泉、放开那个女巫' },
+  ];
+
+  // 可用的示例项目：label 对应 assets/XXX.zip
+  const DEMO_PROJECTS = [
+    { key: 'doupo', label: '斗破苍穹·5 章示例', zip: 'assets/doupo-vault.zip',
+      desc: '萧炎三年之约·5 章草稿+章纲+4 个角色完整档案（玄幻升级流标杆）' },
+    { key: 'wenjian', label: '问剑长歌·示例 Demo', zip: 'assets/seed-vault.zip',
+      desc: '东方玄幻·五卷总纲·42 章节奏曲线·6 角色·31 个伏笔（完整演示 Vault 结构）' },
+  ];
+
+  /** 取 base URL（用于 fetch 静态 ZIP，兼容魔搭部署在子路径的场景） */
+  function baseUrl() {
+    if (global.DreamTale && global.DreamTale.options && global.DreamTale.options.baseUrl) {
+      return global.DreamTale.options.baseUrl.replace(/\/$/, '');
+    }
+    return '';
+  }
+
+  /** fetch 并返回一个静态 ZIP 的 Blob */
+  async function fetchStaticZip(relPath) {
+    const url = baseUrl() + '/' + relPath.replace(/^\//, '');
+    const r = await fetch(url);
+    if (!r.ok) throw new Error(`下载 ZIP 失败：${url}（${r.status}）`);
+    return await r.blob();
+  }
+
   /** 生成项目 id：proj_<时间戳base36>_<随机4位> */
   function genProjectId() {
     return 'proj_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6);
@@ -399,12 +438,73 @@
             volumes_done: 0,
           };
 
+      // 创建方式（仅新建时展示）：blank / genre / demo
+      const defaultCreateMode = 'blank';
+
       const overlay = createModal({
         title: isEdit ? '✏️ 编辑作品' : '✨ 新建作品',
+        extraClass: 'dt-project-modal-large',
         bodyHTML: `
           <div class="dt-project-form">
-            <!-- 封面预览 -->
-            <div class="dt-form-cover-preview" id="dt-form-cover"></div>
+            ${!isEdit ? `
+            <!-- 创建方式 Tab（仅新建） -->
+            <div class="dt-create-mode-tabs" id="dt-create-mode-tabs">
+              <button type="button" class="dt-create-tab dt-create-tab--active" data-mode="blank">
+                <span class="dt-create-tab-icon">📄</span>
+                <span class="dt-create-tab-label">空白项目</span>
+              </button>
+              <button type="button" class="dt-create-tab" data-mode="genre">
+                <span class="dt-create-tab-icon">🧩</span>
+                <span class="dt-create-tab-label">从类型模板</span>
+              </button>
+              <button type="button" class="dt-create-tab" data-mode="demo">
+                <span class="dt-create-tab-icon">🎬</span>
+                <span class="dt-create-tab-label">从示例项目</span>
+              </button>
+            </div>
+
+            <!-- Tab 子面板 -->
+            <div class="dt-create-panel" id="dt-create-panel-blank">
+              <p class="dt-create-panel-hint">从一个已包含 00-05 目录骨架 + 11 种网文类型模板库的空白项目开始，完全自定义。</p>
+            </div>
+
+            <div class="dt-create-panel dt-create-panel--hidden" id="dt-create-panel-genre">
+              <div class="dt-create-panel-hint">选择一个网文类型作为起点：预置该类型的「专属设定模板 + 大纲节奏模板 + 通用 9 模块」。
+                创建后类型模板文件位于 <code>07_类型模板/</code>。</div>
+              <div class="dt-genre-grid">
+                ${GENRE_TEMPLATES.map(g => `
+                  <label class="dt-genre-card">
+                    <input type="radio" name="dt-genre" value="${g.code}:${g.slug}:${g.label}" />
+                    <div class="dt-genre-card-inner">
+                      <div class="dt-genre-card-icon">${g.icon}</div>
+                      <div class="dt-genre-card-title">${g.label}</div>
+                      <div class="dt-genre-card-hint">${g.hint}</div>
+                    </div>
+                  </label>
+                `).join('')}
+              </div>
+            </div>
+
+            <div class="dt-create-panel dt-create-panel--hidden" id="dt-create-panel-demo">
+              <div class="dt-create-panel-hint">选择一个已写好的示例项目导入，作为学习模板快速上手。</div>
+              <div class="dt-demo-grid">
+                ${DEMO_PROJECTS.map(d => `
+                  <label class="dt-demo-card">
+                    <input type="radio" name="dt-demo" value="${d.key}" />
+                    <div class="dt-demo-card-inner">
+                      <div class="dt-demo-card-title">${d.label}</div>
+                      <div class="dt-demo-card-desc">${d.desc}</div>
+                    </div>
+                  </label>
+                `).join('')}
+              </div>
+            </div>
+            ` : ''}
+
+            <!-- 基础信息（编辑和新建都展示，新建非 demo 时可填） -->
+            <div class="dt-project-form-divider" id="dt-project-form-divider">
+              <span>作品基础信息</span>
+            </div>
             <div class="dt-form">
               <div class="dt-form-row">
                 <label>作品名称 <span class="dt-req">*</span></label>
@@ -488,22 +588,133 @@
           </div>`,
         submitText: isEdit ? '💾 保存修改' : '🚀 创建作品',
         onMount: (bodyEl) => {
-          // 实时封面预览 + 名字变化时刷新
+          // ------- 创建模式 Tab（仅新建） -------
+          let createMode = defaultCreateMode;
+          const tabsEl = bodyEl.querySelector('#dt-create-mode-tabs');
+          const dividerEl = bodyEl.querySelector('#dt-project-form-divider');
+          if (tabsEl) {
+            tabsEl.querySelectorAll('.dt-create-tab').forEach(btn => {
+              btn.addEventListener('click', () => {
+                tabsEl.querySelectorAll('.dt-create-tab').forEach(b => b.classList.remove('dt-create-tab--active'));
+                btn.classList.add('dt-create-tab--active');
+                createMode = btn.getAttribute('data-mode');
+                // 子面板显示
+                ['blank', 'genre', 'demo'].forEach(m => {
+                  const panel = bodyEl.querySelector(`#dt-create-panel-${m}`);
+                  if (panel) {
+                    if (m === createMode) panel.classList.remove('dt-create-panel--hidden');
+                    else panel.classList.add('dt-create-panel--hidden');
+                  }
+                });
+                // 从 demo 导入时，基础信息不可手动填（会被 ZIP 覆盖）
+                const disabled = createMode === 'demo';
+                bodyEl.querySelectorAll('.dt-form input, .dt-form select').forEach(el => {
+                  if (disabled) el.setAttribute('disabled', 'disabled');
+                  else el.removeAttribute('disabled');
+                });
+                // 选中类型时自动回填 genre 字段
+                if (createMode === 'genre') {
+                  const sel = bodyEl.querySelector('input[name="dt-genre"]:checked');
+                  if (sel) {
+                    const label = sel.value.split(':')[2] || '';
+                    const genreInput = bodyEl.querySelector('[data-field="genre"]');
+                    if (genreInput && !genreInput.value) genreInput.value = label;
+                  }
+                }
+              });
+            });
+
+            // 选类型卡片时回填 genre
+            bodyEl.querySelectorAll('input[name="dt-genre"]').forEach(r => {
+              r.addEventListener('change', () => {
+                if (r.checked) {
+                  const label = r.value.split(':')[2] || '';
+                  const genreInput = bodyEl.querySelector('[data-field="genre"]');
+                  if (genreInput) genreInput.value = label;
+                  const nameInput = bodyEl.querySelector('[data-field="name"]');
+                  if (nameInput && !nameInput.value) nameInput.value = `【${label}】新建作品`;
+                }
+              });
+            });
+            // 默认选第一个类型
+            const firstGenre = bodyEl.querySelector('input[name="dt-genre"]');
+            if (firstGenre) firstGenre.checked = true;
+            // 默认选斗破苍穹示例
+            const firstDemo = bodyEl.querySelector('input[name="dt-demo"]');
+            if (firstDemo) firstDemo.checked = true;
+          }
+          // ------- 封面预览（仅编辑/空白+genre 模式可见，demo 模式意义不大也保留） -------
           const nameEl = bodyEl.querySelector('[data-field="name"]');
           const genreEl = bodyEl.querySelector('[data-field="genre"]');
+          // 动态生成封面预览
+          const coverContainer = document.createElement('div');
+          coverContainer.className = 'dt-form-cover-wrap';
+          coverContainer.innerHTML = `
+            <div class="dt-form-cover-preview" id="dt-form-cover"></div>
+          `;
+          const formEl = bodyEl.querySelector('.dt-project-form');
+          if (formEl) formEl.insertBefore(coverContainer, (dividerEl || formEl.firstChild).nextSibling
+              || formEl.firstChild);
           const coverEl = bodyEl.querySelector('#dt-form-cover');
           function refreshCover() {
+            if (!coverEl || !nameEl) return;
             const n = nameEl.value || '书';
-            const g = genreEl.value || '';
+            const g = genreEl ? genreEl.value : '';
             const cv = buildCover(n, g);
             coverEl.setAttribute('style', `background: ${cv.grad};`);
             coverEl.innerHTML = `<div class="dt-form-cover-initial">${esc(n.trim().charAt(0) || '书')}</div><div class="dt-form-cover-genre">${esc(g || '原创')}</div>`;
           }
-          nameEl.addEventListener('input', refreshCover);
-          genreEl.addEventListener('input', refreshCover);
+          if (nameEl) nameEl.addEventListener('input', refreshCover);
+          if (genreEl) genreEl.addEventListener('input', refreshCover);
           refreshCover();
+
+          // 保存当前 createMode 到闭包供 onSubmit 读取
+          overlay._getCreateMode = () => createMode;
+          overlay._getSelectedGenre = () => {
+            const r = bodyEl.querySelector('input[name="dt-genre"]:checked');
+            if (!r) return null;
+            const [code, slug, label] = r.value.split(':');
+            return { code, slug, label };
+          };
+          overlay._getSelectedDemo = () => {
+            const r = bodyEl.querySelector('input[name="dt-demo"]:checked');
+            if (!r) return null;
+            return DEMO_PROJECTS.find(d => d.key === r.value) || null;
+          };
         },
         onSubmit: async (formEl) => {
+          const isNew = !isEdit;
+          const createMode = isNew && overlay._getCreateMode ? overlay._getCreateMode() : 'edit';
+
+          // ------- 模式 A: 从 ZIP 导入（类型模板 ZIP / Demo ZIP）-------
+          if (isNew && (createMode === 'genre' || createMode === 'demo')) {
+            let zipRelPath = null;
+            if (createMode === 'genre') {
+              const g = overlay._getSelectedGenre();
+              if (!g) { DT().notify('请选择一个类型模板', 'warning'); return false; }
+              zipRelPath = `assets/genre-${g.code}-${g.slug}-vault.zip`;
+            } else {
+              const d = overlay._getSelectedDemo();
+              if (!d) { DT().notify('请选择一个示例项目', 'warning'); return false; }
+              zipRelPath = d.zip;
+            }
+            try {
+              DT().notify(`正在下载并导入：${zipRelPath} …`, 'info');
+              const blob = await fetchStaticZip(zipRelPath);
+              const newId = await DT().storage.importVault(blob);
+              DT().notify('导入成功，正在加载…', 'success');
+              // 切换到导入的项目
+              if (typeof DT().switchProject === 'function') await DT().switchProject(newId);
+              await loadAndRender();
+              return true;
+            } catch (err) {
+              console.error('[projects] 导入模板 ZIP 失败:', err);
+              DT().notify('导入失败：' + (err.message || err), 'error');
+              return false;
+            }
+          }
+
+          // ------- 模式 B: 空白项目 / 编辑：走原逻辑，先创建 project.json 再把 blank ZIP 导入覆盖 -------
           const name = formEl.querySelector('[data-field="name"]').value.trim();
           if (!name) {
             DT().notify('作品名称不能为空', 'warning');
@@ -527,19 +738,45 @@
             created_at: data.created_at || new Date().toISOString(),
           };
           try {
-            await DT().storage.saveProject(payload);
-            DT().notify(isEdit ? '作品已更新' : '作品已创建', 'success');
-            if (!isEdit) {
+            if (isNew) {
+              // 新建空白项目：导入 blank-vault.zip（含 07_类型模板/）作为基础骨架
+              DT().notify('正在创建空白项目…', 'info');
+              const blob = await fetchStaticZip('assets/blank-vault.zip');
+              // 先导入（含 00_控制面/project.json，其 name 为默认「新建项目」），拿到临时 ID
+              const tempId = await DT().storage.importVault(blob);
+              // 再用用户填写的 payload 更新 project 元数据（保留用户自定义的名称、类型等）
+              const tempProj = await DT().storage.getProject(tempId);
+              const merged = tempProj
+                ? { ...(tempProj.toJSON ? tempProj.toJSON() : tempProj), ...payload, id: payload.id }
+                : payload;
+              // 删除临时 ID 对应的 project + 其下所有数据，然后以 payload.id 重新写入
+              // 更简单的做法：把所有数据从 tempId 重写到 payload.id
+              try {
+                await _cloneProject(tempId, payload.id, merged);
+                await DT().storage.deleteProject(tempId);
+              } catch (_) {
+                // 失败兜底：直接用 tempId，但更新名字
+                await DT().storage.saveProject({ ...merged, id: tempId });
+                payload.id = tempId;
+              }
+              DT().notify('作品已创建', 'success');
+            } else {
+              await DT().storage.saveProject(payload);
+              DT().notify('作品已更新', 'success');
+            }
+            if (!isEdit || isEdit) {
+              const targetId = payload.id;
               // 新建后自动设为当前作品
               if (typeof DT().switchProject === 'function') {
-                await DT().switchProject(payload.id);
+                await DT().switchProject(targetId);
               } else {
                 try {
                   const M = DT().modules && DT().modules.models;
                   DT().state.currentProject = M ? new M.Project(payload) : payload;
                 } catch (e) { DT().state.currentProject = payload; }
               }
-            } else {
+            }
+            if (isEdit) {
               // 编辑：如果是当前项目，同步刷新内存对象
               const curId = typeof DT().state.currentProject === 'object' && DT().state.currentProject
                 ? DT().state.currentProject.id
@@ -562,6 +799,41 @@
         },
       });
       container.appendChild(overlay);
+    }
+
+    /**
+     * 把 srcId 项目下所有数据克隆为 dstId，并用 mergedProject 更新 dstId 的 Project 元数据。
+     * 用于 blank 项目导入后更换 id（避免所有用户的空白项目 id 都叫 "blank-project"，会冲突）。
+     */
+    async function _cloneProject(srcId, dstId, mergedProject) {
+      const s = DT().storage;
+      if (!s) throw new Error('storage 不可用');
+      const chapters = await s.listChapters(srcId);
+      const hooks = await s.listHooks(srcId);
+      const volumes = await s.listVolumes(srcId);
+      const characters = await s.listCharacters(srcId);
+      const settings = await s.listWorldSettings(srcId);
+      const ency = await s.listEncyclopediaEntries(srcId);
+      await s.saveProject(mergedProject);
+      for (const c of chapters) await s.saveChapter(dstId, c);
+      for (const h of hooks) await s.saveHook(dstId, h);
+      for (const v of volumes) await s.saveVolume(dstId, v);
+      // 注：saveCharacters / saveWorldSettings / saveEncyclopediaEntries 会自动做同步，不影响结果
+      if (typeof s.saveCharacters === 'function' && characters.length) {
+        await s.saveCharacters(dstId, characters);
+      } else {
+        for (const c of characters) await s.saveCharacter(dstId, c);
+      }
+      if (typeof s.saveWorldSettings === 'function' && settings.length) {
+        await s.saveWorldSettings(dstId, settings);
+      } else {
+        for (const w of settings) await s.saveWorldSetting(dstId, w);
+      }
+      if (typeof s.saveEncyclopediaEntries === 'function' && ency.length) {
+        await s.saveEncyclopediaEntries(dstId, ency);
+      } else {
+        for (const e of ency) await s.saveEncyclopediaEntry(dstId, e);
+      }
     }
 
     // ---------- 删除确认 ----------

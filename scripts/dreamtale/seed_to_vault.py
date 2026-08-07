@@ -3,10 +3,14 @@
 
 把归档 ``app_legacy_gradio.py`` 的《问剑长歌》示例数据转成
 NovelForge_Vault 格式的 ZIP 文件，以及一个空白项目模板 ZIP。
+同时把 ``NovelForge_Vault/`` 中的斗破苍穹示例、11 种网文类型模板也打包为 ZIP。
 
 输出：
-    web/static/assets/seed-vault.zip   — 问剑长歌 Demo（1:1 镜像 NovelForge_Vault）
-    web/static/assets/blank-vault.zip  — 空白项目模板（完整目录骨架 + 空模板）
+    web/static/assets/seed-vault.zip            — 问剑长歌 Demo（1:1 镜像 NovelForge_Vault）
+    web/static/assets/blank-vault.zip           — 空白项目模板（完整目录骨架 + 07_类型模板/）
+    web/static/assets/doupo-vault.zip           — 斗破苍穹示例（基于 NovelForge_Vault/ 打包）
+    web/static/assets/genre-X-YYY-vault.zip     — 11 种网文类型模板（blank 骨架 + 通用9模块
+                                                    + 对应类型专属2模块）共 11 个 ZIP
 
 生成的 ZIP 可被 ``web/src/storage/zip-utils.js`` 的 ``importVaultFromZip`` 解析：
     - 使用 STORE（method=0）方式，UTF-8 文件名
@@ -31,6 +35,54 @@ from typing import Any, Dict, List, Optional, Tuple
 # ---------------------------------------------------------------------------
 _PROJECT_ROOT = Path(__file__).resolve().parents[2]
 _OUTPUT_DIR = _PROJECT_ROOT / "web" / "static" / "assets"
+_NOVELFORGE_VAULT = _PROJECT_ROOT / "NovelForge_Vault"
+_GENRE_TEMPLATES_DIR = _NOVELFORGE_VAULT / "07_类型模板"
+
+# 11 种网文类型：(编号, slug, 显示名, 子目录名)
+GENRE_TYPES: List[Tuple[str, str, str, str]] = [
+    ("01", "xuanhuan", "玄幻类", "01_玄幻类"),
+    ("02", "xiuzhen", "修真仙侠类", "02_修真仙侠类"),
+    ("03", "wangyou", "网游游戏类", "03_网游游戏类"),
+    ("04", "naodong", "脑洞系统无限流类", "04_脑洞系统无限流类"),
+    ("05", "dushi", "都市类", "05_都市类"),
+    ("06", "kehuan", "科幻类", "06_科幻类"),
+    ("07", "lishi", "历史架空类", "07_历史架空类"),
+    ("08", "mori", "末日废土类", "08_末日废土类"),
+    ("09", "dianjing", "电竞竞技类", "09_电竞竞技类"),
+    ("10", "nüpin", "女频类", "10_女频类"),
+    ("11", "zhongtian", "种田经营类", "11_种田经营类"),
+]
+
+# 通用 9 个模块文件名（相对 07_类型模板/_通用模块/）
+COMMON_MODULE_FILES = [
+    "01_基础信息模板.md",
+    "02_主角档案模板.md",
+    "03_核心配角模板.md",
+    "04_反派档案模板.md",
+    "05_关系图谱模板.md",
+    "06_卷弧大纲模板.md",
+    "07_伏笔管理模板.md",
+    "08_时间线模板.md",
+    "09_名词表模板.md",
+]
+
+# 斗破苍穹案例 project.json 元数据（因为 NovelForge_Vault 里没有 project.json，我们补一个）
+DOUPO_PROJECT_META: Dict[str, Any] = {
+    "id": "doupo-cangqiong-demo",
+    "name": "斗破苍穹（示例）",
+    "subtitle": "三十年河东，三十年河西，莫欺少年穷",
+    "genre": "玄幻 · 升级流 · 长篇网文",
+    "author": "示例 · 参照天蚕土豆原作",
+    "target_words": 5000000,
+    "current_words": 30000,
+    "volumes_done": 0,
+    "volumes_total": 10,
+    "chapters_done": 5,
+    "chapters_total": 1648,
+    "status": "第 1 卷『乌坦城』草稿中（ch_001~ch_005）",
+    "updated": datetime.now().strftime("%Y-%m-%d"),
+    "created_at": "2026-08-07",
+}
 
 # ===========================================================================
 # 示例数据（从 docs/_archive/app_legacy_gradio.py 第 29-347 行迁移）
@@ -1605,14 +1657,196 @@ def _build_blank_files() -> Tuple[Dict[str, bytes], List[Dict[str, str]]]:
 
 
 def build_blank_zip() -> Path:
-    """构建并写入 blank-vault.zip。"""
+    """构建并写入 blank-vault.zip（含 07_类型模板/ 完整目录）。"""
     files, manifest_entries = _build_blank_files()
+
+    # 在 blank 骨架上追加 07_类型模板/（通用 9 模块 + 11 类型各 2 个 + README）
+    files, manifest_entries = _append_genre_templates_to_files(
+        files, manifest_entries, include_all_types=True)
+
     manifest = _build_manifest("blank-project", manifest_entries)
     files["manifest.json"] = json.dumps(manifest, ensure_ascii=False, indent=2).encode("utf-8")
 
     output = _OUTPUT_DIR / "blank-vault.zip"
     count = _write_zip(files, output)
     print(f"  blank-vault.zip: {count} 个文件 → {output.relative_to(_PROJECT_ROOT)}")
+    return output
+
+
+# ===========================================================================
+# 辅助：扫描 NovelForge_Vault 并推断 manifest 类型
+# ===========================================================================
+
+def _guess_manifest_type(rel_path: str) -> Optional[str]:
+    """根据相对路径猜测 manifest.json 的 type 字段值。"""
+    p = rel_path.replace("\\", "/")
+    name = p.rsplit("/", 1)[-1]
+
+    if name == "project.json":
+        return "project"
+    if p.startswith("02_角色/") and name.endswith(".md"):
+        return "character"
+    if p.startswith("01_世界观/") and name.endswith(".md"):
+        return "world_setting"
+    if p.startswith("04_大纲与脉络/") and name == "hooks_registry.json":
+        return "hooks"
+    if p.startswith("04_大纲与脉络/") and "vol_" in p and name == "vol_meta.json":
+        return "volume"
+    if (p.startswith("05_正文/published/") or p.startswith("05_正文/drafts/")) \
+            and name.endswith(".md") and re.search(r"ch_\d{3}", name):
+        return "chapter"
+    return None
+
+
+def _scan_novelforge_vault(vault_root: Path
+                           ) -> Tuple[Dict[str, bytes], List[Dict[str, str]]]:
+    """扫描真实的 NovelForge_Vault/ 目录，构建 {path: bytes} 和 manifest_entries。
+
+    忽略 07_类型模板/（在斗破苍穹案例中我们不把类型模板一并打包，避免用户混淆；
+    如需类型模板，用户在新建时选对应 genre 模板即可）。
+    同时忽略以 "." 开头的隐藏目录中的状态 JSON？不，.state/ 要保留，它是初始化数据。
+    """
+    files: Dict[str, bytes] = {}
+    manifest_entries: List[Dict[str, str]] = []
+
+    for f in vault_root.rglob("*"):
+        if not f.is_file():
+            continue
+        rel = f.relative_to(vault_root).as_posix()
+        # 不包含 07_类型模板/ 到斗破苍穹案例中（避免误导用户以为斗破自带这些模板）
+        if rel.startswith("07_类型模板/"):
+            continue
+        # 跳过 .DS_Store 等无意义文件
+        if rel.startswith(".") and "/.state/" not in rel and not rel.startswith(".state/"):
+            continue
+
+        content = f.read_bytes()
+        files[rel] = content
+
+        mtype = _guess_manifest_type(rel)
+        if mtype:
+            entry: Dict[str, str] = {"path": rel, "type": mtype}
+            if mtype == "chapter":
+                if "/published/" in rel:
+                    entry["status"] = "published"
+                else:
+                    entry["status"] = "draft"
+            manifest_entries.append(entry)
+
+    return files, manifest_entries
+
+
+def _append_genre_templates_to_files(files: Dict[str, bytes],
+                                     manifest_entries: List[Dict[str, str]],
+                                     include_all_types: bool,
+                                     genre_subdir: Optional[str] = None,
+                                     ) -> Tuple[Dict[str, bytes], List[Dict[str, str]]]:
+    """把 07_类型模板/ 追加到 files dict。
+
+    Args:
+        include_all_types: True → 打包通用 + 全部 11 个类型（给 blank-vault 用）
+        genre_subdir: 非 None 时，只打包通用 + 指定子目录（给单个 genre ZIP 用），
+                      如 "01_玄幻类"
+    """
+    src = _GENRE_TEMPLATES_DIR
+
+    def _write_one(src_file: Path, rel: str) -> None:
+        content = src_file.read_bytes()
+        files[rel] = content
+
+    # README
+    readme = src / "README.md"
+    if readme.exists():
+        _write_one(readme, "07_类型模板/README.md")
+
+    # 通用 9 模块
+    common_dir = src / "_通用模块"
+    if common_dir.exists():
+        for fname in COMMON_MODULE_FILES:
+            p = common_dir / fname
+            if p.exists():
+                _write_one(p, f"07_类型模板/_通用模块/{fname}")
+
+    # 类型专属
+    if include_all_types:
+        dirs_to_include = [d for _, _, _, d in GENRE_TYPES]
+    else:
+        dirs_to_include = [genre_subdir] if genre_subdir else []
+
+    for subdir_name in dirs_to_include:
+        sub = src / subdir_name
+        if not sub.exists():
+            continue
+        for child in sub.iterdir():
+            if child.is_file():
+                _write_one(child, f"07_类型模板/{subdir_name}/{child.name}")
+
+    return files, manifest_entries
+
+
+# ===========================================================================
+# doupo-vault.zip 构建（斗破苍穹案例）
+# ===========================================================================
+
+def build_doupo_zip() -> Path:
+    """从真实 NovelForge_Vault/ 目录打包斗破苍穹示例 ZIP。"""
+    files, manifest_entries = _scan_novelforge_vault(_NOVELFORGE_VAULT)
+
+    # 补 00_控制面/project.json（原目录里没这个文件）
+    proj_content = json.dumps(DOUPO_PROJECT_META, ensure_ascii=False, indent=2).encode("utf-8")
+    files["00_控制面/project.json"] = proj_content
+    manifest_entries.append({"path": "00_控制面/project.json", "type": "project"})
+
+    manifest = _build_manifest(DOUPO_PROJECT_META["id"], manifest_entries)
+    files["manifest.json"] = json.dumps(manifest, ensure_ascii=False, indent=2).encode("utf-8")
+
+    output = _OUTPUT_DIR / "doupo-vault.zip"
+    count = _write_zip(files, output)
+    print(f"  doupo-vault.zip: {count} 个文件 → {output.relative_to(_PROJECT_ROOT)}")
+    return output
+
+
+# ===========================================================================
+# genre-XX-vault.zip 构建（11 种网文类型模板）
+# ===========================================================================
+
+def _inject_genre_into_project_json(files: Dict[str, bytes],
+                                    genre_slug: str,
+                                    genre_display: str,
+                                    ) -> None:
+    """把 blank project.json 的 genre 字段改写成具体类型，方便前端识别。"""
+    key = "00_控制面/project.json"
+    if key not in files:
+        return
+    try:
+        proj = json.loads(files[key].decode("utf-8"))
+    except Exception:
+        return
+    proj["id"] = f"genre-{genre_slug}-template"
+    proj["name"] = f"【{genre_display}】新建作品"
+    proj["genre"] = genre_display
+    proj["subtitle"] = f"基于 {genre_display} 类型模板创建"
+    proj["updated"] = datetime.now().strftime("%Y-%m-%d")
+    proj["created_at"] = datetime.now().strftime("%Y-%m-%d")
+    files[key] = json.dumps(proj, ensure_ascii=False, indent=2).encode("utf-8")
+
+
+def build_genre_zip(code: str, slug: str, display: str, subdir: str) -> Path:
+    """生成单个类型模板 ZIP：blank 骨架 + 通用 9 模块 + 该类型专属 2 模块。"""
+    files, manifest_entries = _build_blank_files()
+    files, manifest_entries = _append_genre_templates_to_files(
+        files, manifest_entries, include_all_types=False, genre_subdir=subdir)
+
+    _inject_genre_into_project_json(files, slug, display)
+
+    project_id = f"genre-{slug}-template"
+    manifest = _build_manifest(project_id, manifest_entries)
+    files["manifest.json"] = json.dumps(manifest, ensure_ascii=False, indent=2).encode("utf-8")
+
+    output = _OUTPUT_DIR / f"genre-{code}-{slug}-vault.zip"
+    count = _write_zip(files, output)
+    print(f"  genre-{code}-{slug}-vault.zip: {count} 个文件 → "
+          f"{output.relative_to(_PROJECT_ROOT)}")
     return output
 
 
@@ -1724,18 +1958,29 @@ def _validate_zip(zip_path: Path) -> Dict[str, Any]:
 # ===========================================================================
 
 def main() -> None:
-    """生成 seed-vault.zip 和 blank-vault.zip 并校验。"""
-    print("DreamTale Demo 数据转换")
+    """生成 seed-vault.zip / blank-vault.zip / doupo-vault.zip / 11 个 genre ZIP 并校验。"""
+    print("DreamTale Demo + 斗破苍穹 + 11 种网文类型模板 · 数据转换")
     print("=" * 60)
 
     # 生成
     print("\n[1] 生成 ZIP 文件：")
     seed_path = build_seed_zip()
     blank_path = build_blank_zip()
+    doupo_path = build_doupo_zip()
+    genre_paths: List[Tuple[str, Path]] = []
+    for code, slug, display, subdir in GENRE_TYPES:
+        p = build_genre_zip(code, slug, display, subdir)
+        genre_paths.append((f"genre-{code}-{slug}-vault.zip", p))
 
     # 校验
     print("\n[2] 校验 ZIP 文件：")
-    for label, path in [("seed-vault.zip", seed_path), ("blank-vault.zip", blank_path)]:
+    all_zips = [
+        ("seed-vault.zip", seed_path),
+        ("blank-vault.zip", blank_path),
+        ("doupo-vault.zip", doupo_path),
+        *genre_paths,
+    ]
+    for label, path in all_zips:
         report = _validate_zip(path)
         print(f"\n  --- {label} ---")
         print(f"  ZIP 条目数: {report['total_entries']}")
@@ -1757,7 +2002,7 @@ def main() -> None:
             print(f"  错误: {report['errors']}")
 
     print("\n" + "=" * 60)
-    print("完成。")
+    print(f"完成。共生成 {len(all_zips)} 个 ZIP 文件。")
 
 
 if __name__ == "__main__":

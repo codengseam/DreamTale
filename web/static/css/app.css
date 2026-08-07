@@ -5931,3 +5931,168 @@ body > .fq-modal-overlay,
   max-width: 100%;
 }
 
+
+/* ============================================================
+   新建作品 · 创建模式 Tab & 模板/示例卡片
+   ============================================================ */
+.dt-project-modal-large {
+  width: min(960px, 96vw) !important;
+  max-height: 92vh;
+}
+
+.dt-create-mode-tabs {
+  display: flex;
+  gap: 10px;
+  margin: 4px 0 18px 0;
+  padding: 6px;
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+}
+.dt-create-tab {
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 12px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  cursor: pointer;
+  color: var(--ink-secondary);
+  transition: all var(--transition-fast);
+  font-family: inherit;
+}
+.dt-create-tab:hover {
+  background: var(--bg-hover);
+  color: var(--ink-primary);
+}
+.dt-create-tab--active {
+  background: var(--bg-card);
+  border-color: var(--accent-border);
+  color: var(--accent);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+.dt-create-tab-icon {
+  font-size: 20px;
+  line-height: 1;
+}
+.dt-create-tab-label {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.dt-create-panel {
+  padding: 14px 16px;
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  margin-bottom: 18px;
+}
+.dt-create-panel--hidden {
+  display: none !important;
+}
+.dt-create-panel-hint {
+  margin: 0 0 12px 0;
+  font-size: 13px;
+  color: var(--ink-secondary);
+  line-height: 1.6;
+}
+.dt-create-panel-hint code {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  padding: 1px 5px;
+  background: var(--bg-card);
+  border-radius: 5px;
+  color: var(--accent);
+}
+
+/* 类型模板网格 + 示例项目网格 */
+.dt-genre-grid,
+.dt-demo-grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+}
+.dt-genre-card,
+.dt-demo-card {
+  display: block;
+  cursor: pointer;
+  margin: 0;
+}
+.dt-genre-card > input[type="radio"],
+.dt-demo-card > input[type="radio"] {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.dt-genre-card-inner,
+.dt-demo-card-inner {
+  height: 100%;
+  padding: 12px 14px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  transition: all var(--transition-fast);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+}
+.dt-genre-card:hover .dt-genre-card-inner,
+.dt-demo-card:hover .dt-demo-card-inner {
+  border-color: var(--accent-border);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.07);
+}
+.dt-genre-card > input[type="radio"]:checked + .dt-genre-card-inner,
+.dt-demo-card > input[type="radio"]:checked + .dt-demo-card-inner {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-bg);
+  background: color-mix(in srgb, var(--accent-bg) 60%, var(--bg-card));
+}
+.dt-genre-card-icon {
+  font-size: 24px;
+  margin-bottom: 4px;
+  line-height: 1;
+}
+.dt-genre-card-title,
+.dt-demo-card-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink-primary);
+  margin-bottom: 4px;
+}
+.dt-genre-card-hint,
+.dt-demo-card-desc {
+  font-size: 12px;
+  color: var(--ink-muted);
+  line-height: 1.5;
+}
+
+/* 作品基础信息分隔符 */
+.dt-project-form-divider {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 4px 0 16px 0;
+  color: var(--ink-muted);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.dt-project-form-divider::before,
+.dt-project-form-divider::after {
+  content: "";
+  flex: 1 1 0;
+  height: 1px;
+  background: var(--divider);
+}
+.dt-project-form-divider > span {
+  flex: 0 0 auto;
+}
+
+.dt-form-cover-wrap {
+  margin-bottom: 14px;
+  display: flex;
+  justify-content: center;
+}

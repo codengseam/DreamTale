@@ -8,6 +8,11 @@
 import { IStorageBackend, NotSupportedError } from './interface.js';
 import { Project, Volume, Chapter, Hook, Character, WorldSetting, EncyclopediaEntry } from '../core/models.js';
 import { normalizeVol, normalizeCh } from '../core/vault-schema.js';
+import {
+  characterToEncyclopediaEntry,
+  encyclopediaEntryToCharacter,
+  characterEncyclopediaId,
+} from '../core/character-encyclopedia-sync.js';
 
 const DB_NAME = 'dreamtale';
 const DB_VERSION = 2;
@@ -266,26 +271,79 @@ export class IndexedDBBackend extends IStorageBackend {
   async listCharacters(projectId) {
     const db = await this._db();
     const rows = await getAllByProject(db, STORE_CHARACTERS, projectId);
-    return rows.map((r) => Character.fromJSON(r));
+    // 过滤软删除（_deleted=true）
+    return rows
+      .filter(r => !r._deleted)
+      .map((r) => Character.fromJSON(r));
   }
 
   async saveCharacter(projectId, character) {
     const db = await this._db();
     const c = character instanceof Character ? character : new Character(character);
+    const rawCharacter = character && typeof character === 'object' ? character : {};
+    const isSoftDeleted = Boolean(rawCharacter._deleted);
     const data = { ...c.toJSON(), project_id: projectId };
+    if (isSoftDeleted) data._deleted = true;
     await reqToPromise(tx(db, STORE_CHARACTERS, 'readwrite').put(data));
+
+    // 同步到设定百科（软删除就删百科词条，否则 upsert）
+    const encyId = characterEncyclopediaId(c.name);
+    if (isSoftDeleted) {
+      try {
+        await reqToPromise(
+          tx(db, STORE_ENCYCLOPEDIA, 'readwrite').delete([projectId, encyId])
+        );
+      } catch (_) { /* 可能百科不存在，忽略 */ }
+    } else {
+      // 保留百科原 created_at，避免每次更新角色都重置创建时间
+      const existing = await reqToPromise(
+        tx(db, STORE_ENCYCLOPEDIA, 'readonly').get([projectId, encyId])
+      ).catch(() => null);
+      const entry = characterToEncyclopediaEntry(c, {
+        id: encyId,
+        created_at: existing?.created_at || undefined,
+      });
+      const encyData = { ...entry.toJSON(), project_id: projectId };
+      await reqToPromise(tx(db, STORE_ENCYCLOPEDIA, 'readwrite').put(encyData));
+    }
   }
 
-  /** 批量保存角色（单事务原子写入） */
+  /** 批量保存角色（单事务原子写入）+ 批量同步到百科 */
   async saveCharacters(projectId, characters) {
     if (!characters || !characters.length) return;
     const db = await this._db();
-    const transaction = db.transaction(STORE_CHARACTERS, 'readwrite');
-    const store = transaction.objectStore(STORE_CHARACTERS);
+
+    // 预查询现有百科词条，保留 created_at（单事务只读）
+    const existingMap = new Map();
+    try {
+      const existing = await getAllByProject(db, STORE_ENCYCLOPEDIA, projectId);
+      for (const e of existing) {
+        if (e.type === 'character' && e.id) existingMap.set(e.id, e);
+      }
+    } catch (_) { /* 忽略 */ }
+
+    const transaction = db.transaction([STORE_CHARACTERS, STORE_ENCYCLOPEDIA], 'readwrite');
+    const charStore = transaction.objectStore(STORE_CHARACTERS);
+    const encyStore = transaction.objectStore(STORE_ENCYCLOPEDIA);
+
     for (const character of characters) {
       const c = character instanceof Character ? character : new Character(character);
-      const data = { ...c.toJSON(), project_id: projectId };
-      store.put(data);
+      const isSoftDeleted = Boolean(character && typeof character === 'object' && character._deleted);
+      const charData = { ...c.toJSON(), project_id: projectId };
+      if (isSoftDeleted) charData._deleted = true;
+      charStore.put(charData);
+
+      const encyId = characterEncyclopediaId(c.name);
+      if (isSoftDeleted) {
+        encyStore.delete([projectId, encyId]);
+      } else {
+        const existing = existingMap.get(encyId);
+        const entry = characterToEncyclopediaEntry(c, {
+          id: encyId,
+          created_at: existing?.created_at || undefined,
+        });
+        encyStore.put({ ...entry.toJSON(), project_id: projectId });
+      }
     }
     return new Promise((resolve, reject) => {
       transaction.oncomplete = () => resolve();
@@ -370,29 +428,43 @@ export class IndexedDBBackend extends IStorageBackend {
   async saveEncyclopediaEntry(projectId, entry) {
     const db = await this._db();
     const e = entry instanceof EncyclopediaEntry ? entry : new EncyclopediaEntry(entry);
+    const now = new Date().toISOString();
     const data = {
       ...e.toJSON(),
       project_id: projectId,
-      updated_at: new Date().toISOString(),
+      updated_at: now,
     };
     await reqToPromise(tx(db, STORE_ENCYCLOPEDIA, 'readwrite').put(data));
+
+    // 反向同步：type=character 的词条，同步到 characters 表
+    if (e.type === 'character' && e.name) {
+      const character = encyclopediaEntryToCharacter(e);
+      // 检查是否被软删除（如果对应 character 已经软删除，这里恢复它）
+      const cData = { ...character.toJSON(), project_id: projectId };
+      await reqToPromise(tx(db, STORE_CHARACTERS, 'readwrite').put(cData));
+    }
   }
 
-  /** 批量保存设定百科（单事务原子写入） */
+  /** 批量保存设定百科（单事务原子写入）+ type=character 反向同步 */
   async saveEncyclopediaEntries(projectId, entries) {
     if (!entries || !entries.length) return;
     const db = await this._db();
-    const transaction = db.transaction(STORE_ENCYCLOPEDIA, 'readwrite');
-    const store = transaction.objectStore(STORE_ENCYCLOPEDIA);
     const now = new Date().toISOString();
+    const transaction = db.transaction([STORE_ENCYCLOPEDIA, STORE_CHARACTERS], 'readwrite');
+    const encyStore = transaction.objectStore(STORE_ENCYCLOPEDIA);
+    const charStore = transaction.objectStore(STORE_CHARACTERS);
+
     for (const entry of entries) {
       const e = entry instanceof EncyclopediaEntry ? entry : new EncyclopediaEntry(entry);
-      const data = {
+      encyStore.put({
         ...e.toJSON(),
         project_id: projectId,
         updated_at: now,
-      };
-      store.put(data);
+      });
+      if (e.type === 'character' && e.name) {
+        const character = encyclopediaEntryToCharacter(e);
+        charStore.put({ ...character.toJSON(), project_id: projectId });
+      }
     }
     return new Promise((resolve, reject) => {
       transaction.oncomplete = () => resolve();
@@ -403,9 +475,32 @@ export class IndexedDBBackend extends IStorageBackend {
 
   async deleteEncyclopediaEntry(projectId, entryId) {
     const db = await this._db();
+
+    // 删除前先读词条，如果是 character 类型，同步软删除 characters 表对应记录
+    let toDelete = null;
+    try {
+      toDelete = await reqToPromise(
+        tx(db, STORE_ENCYCLOPEDIA, 'readonly').get([projectId, entryId])
+      );
+    } catch (_) { /* ignore */ }
+
     await reqToPromise(
       tx(db, STORE_ENCYCLOPEDIA, 'readwrite').delete([projectId, entryId])
     );
+
+    if (toDelete && toDelete.type === 'character' && toDelete.name) {
+      // 软删除对应 character：读旧数据 → 标记 _deleted=true → 写回
+      try {
+        const oldChar = await reqToPromise(
+          tx(db, STORE_CHARACTERS, 'readonly').get([projectId, toDelete.name])
+        );
+        if (oldChar) {
+          oldChar._deleted = true;
+          oldChar.role = '已删除·' + (oldChar.role || '');
+          await reqToPromise(tx(db, STORE_CHARACTERS, 'readwrite').put(oldChar));
+        }
+      } catch (_) { /* ignore */ }
+    }
   }
 
   async searchEncyclopedia(projectId, query, filter = {}) {
