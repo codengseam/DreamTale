@@ -6096,3 +6096,671 @@ body > .fq-modal-overlay,
   display: flex;
   justify-content: center;
 }
+
+/* ============================================================
+   新建作品弹窗 · 方案 A：极简胶囊卡片式（Notion/Linear 风）
+   作用域：.dt-modal-scheme-a 下，避免与旧样式冲突
+   ============================================================ */
+.dt-modal-scheme-a .dt-modal-body {
+  padding: 20px 28px 24px;
+}
+
+/* ===== 最外层容器 ===== */
+.dt-modal-scheme-a .a-scheme {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-height: 0;
+}
+
+/* ===== 胶囊 Tab（创建方式）===== */
+.dt-modal-scheme-a .a-create-tabs {
+  display: inline-flex;
+  padding: 4px;
+  background: var(--bg-elevated, #f4f5f7);
+  border: 1px solid var(--divider, #e6e8eb);
+  border-radius: 999px;
+  align-self: center;
+  width: fit-content;
+  gap: 2px;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.03);
+}
+.dt-modal-scheme-a .a-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 16px 7px 12px;
+  border-radius: 999px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted, #6b7280);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  white-space: nowrap;
+  line-height: 1.2;
+}
+.dt-modal-scheme-a .a-tab:hover {
+  color: var(--text, #1f2937);
+}
+.dt-modal-scheme-a .a-tab-icon {
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--bg-card, #fff);
+  color: var(--text-muted, #6b7280);
+  transition: all 0.18s ease;
+}
+.dt-modal-scheme-a .a-tab--active {
+  background: var(--bg-card, #fff);
+  color: var(--accent, #4f46e5);
+  box-shadow:
+    0 1px 3px rgba(0,0,0,0.08),
+    0 0 0 1px rgba(79,70,229,0.08);
+}
+.dt-modal-scheme-a .a-tab--active .a-tab-icon {
+  background: var(--accent, #4f46e5);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(79,70,229,0.35);
+}
+
+/* ===== Tab 面板（带淡入动画）===== */
+.dt-modal-scheme-a .a-panel {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+.dt-modal-scheme-a .a-panel--hidden {
+  display: none !important;
+}
+
+/* ===== 区标题（Section Label）===== */
+.dt-modal-scheme-a .a-section-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted, #6b7280);
+  letter-spacing: 0.02em;
+  margin-bottom: 10px;
+  line-height: 1.4;
+}
+.dt-modal-scheme-a .a-section-icon { font-size: 13px; }
+
+/* ===== 空白项目卡片 ===== */
+.dt-modal-scheme-a .a-blank-card {
+  position: relative;
+  padding: 18px 20px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, var(--bg-card, #fff) 0%, var(--bg-elevated, #f7f8fa) 100%);
+  border: 1px solid var(--divider, #e6e8eb);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  transition: all 0.2s ease;
+}
+.dt-modal-scheme-a .a-blank-card.a-card-active {
+  border-color: var(--accent, #4f46e5);
+  box-shadow:
+    0 0 0 3px rgba(79,70,229,0.08),
+    0 4px 12px rgba(79,70,229,0.08);
+}
+.dt-modal-scheme-a .a-blank-icon {
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #eef2ff, #e0e7ff);
+  color: #4f46e5;
+  font-size: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.dt-modal-scheme-a .a-blank-body { flex: 1; min-width: 0; }
+.dt-modal-scheme-a .a-blank-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text, #1f2937);
+  margin-bottom: 4px;
+  line-height: 1.4;
+}
+.dt-modal-scheme-a .a-blank-desc {
+  font-size: 12.5px;
+  color: var(--text-muted, #6b7280);
+  line-height: 1.6;
+}
+.dt-modal-scheme-a .a-blank-badge {
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--accent, #4f46e5);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  flex: 0 0 auto;
+}
+
+/* ===== 类型模板 11 宫格 ===== */
+.dt-modal-scheme-a .a-genre-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+.dt-modal-scheme-a .a-genre-card {
+  position: relative;
+  display: block;
+  padding: 2px;
+  border-radius: 12px;
+  cursor: pointer;
+  user-select: none;
+  outline: none;
+}
+.dt-modal-scheme-a .a-genre-card input[type="radio"] {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.dt-modal-scheme-a .a-genre-card-bg {
+  position: absolute;
+  inset: 0;
+  border-radius: 12px;
+  background: var(--bg-card, #fff);
+  border: 2px solid transparent;
+  transition: all 0.18s ease;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+}
+.dt-modal-scheme-a .a-genre-card:hover .a-genre-card-bg {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.07);
+  border-color: rgba(79,70,229,0.25);
+}
+.dt-modal-scheme-a .a-genre-card.a-card-active .a-genre-card-bg {
+  border-color: var(--accent, #4f46e5);
+  box-shadow:
+    0 0 0 3px rgba(79,70,229,0.1),
+    0 6px 16px rgba(79,70,229,0.12);
+}
+.dt-modal-scheme-a .a-genre-card-inner {
+  position: relative;
+  z-index: 1;
+  padding: 12px 8px 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 4px;
+}
+.dt-modal-scheme-a .a-genre-icon-bg {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, var(--bg-elevated, #f4f5f7), var(--bg-card, #fff));
+  border: 1px solid var(--divider, #e6e8eb);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  margin-bottom: 4px;
+  transition: transform 0.18s ease;
+}
+.dt-modal-scheme-a .a-genre-card:hover .a-genre-icon-bg {
+  transform: scale(1.06);
+}
+.dt-modal-scheme-a .a-genre-card.a-card-active .a-genre-icon-bg {
+  background: linear-gradient(135deg, rgba(79,70,229,0.12), rgba(79,70,229,0.04));
+  border-color: var(--accent, #4f46e5);
+}
+.dt-modal-scheme-a .a-genre-name {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text, #1f2937);
+  line-height: 1.3;
+}
+.dt-modal-scheme-a .a-genre-hint {
+  font-size: 10.5px;
+  color: var(--text-muted, #6b7280);
+  line-height: 1.4;
+}
+.dt-modal-scheme-a .a-checkmark {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--accent, #4f46e5);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transform: scale(0.6);
+  transition: all 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
+  z-index: 2;
+  box-shadow: 0 2px 6px rgba(79,70,229,0.4);
+}
+.dt-modal-scheme-a .a-card-active .a-checkmark {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* ===== 示例项目双列大卡片 ===== */
+.dt-modal-scheme-a .a-demo-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.dt-modal-scheme-a .a-demo-card {
+  position: relative;
+  display: block;
+  padding: 2px;
+  border-radius: 14px;
+  cursor: pointer;
+  user-select: none;
+  overflow: hidden;
+  --demo-accent: #5b8def;
+}
+.dt-modal-scheme-a .a-demo-card input[type="radio"] {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.dt-modal-scheme-a .a-demo-bg {
+  position: absolute;
+  inset: 0;
+  border-radius: 14px;
+  background: var(--bg-card, #fff);
+  border: 2px solid transparent;
+  transition: all 0.2s ease;
+}
+.dt-modal-scheme-a .a-demo-card:hover .a-demo-bg {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+  border-color: rgba(91,141,239,0.3);
+}
+.dt-modal-scheme-a .a-demo-card.a-card-active .a-demo-bg {
+  border-color: var(--demo-accent, #5b8def);
+  background: linear-gradient(145deg, var(--bg-card, #fff) 0%, color-mix(in srgb, var(--demo-accent, #5b8def) 6%, var(--bg-card, #fff)) 100%);
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--demo-accent, #5b8def) 18%, transparent),
+    0 8px 24px color-mix(in srgb, var(--demo-accent, #5b8def) 18%, rgba(0,0,0,0.08));
+}
+.dt-modal-scheme-a .a-demo-icon-bg {
+  position: relative;
+  z-index: 1;
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--demo-accent, #5b8def) 14%, #fff), color-mix(in srgb, var(--demo-accent, #5b8def) 6%, #fff));
+  border: 1px solid color-mix(in srgb, var(--demo-accent, #5b8def) 30%, transparent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  margin-bottom: 12px;
+}
+.dt-modal-scheme-a .a-demo-title {
+  position: relative;
+  z-index: 1;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text, #1f2937);
+  line-height: 1.35;
+  margin-bottom: 6px;
+}
+.dt-modal-scheme-a .a-demo-desc {
+  position: relative;
+  z-index: 1;
+  font-size: 12.5px;
+  color: var(--text-muted, #6b7280);
+  line-height: 1.6;
+}
+
+/* ===== 中文分隔符 ===== */
+.dt-modal-scheme-a .a-divider {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  color: var(--text-muted, #6b7280);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  margin-top: 4px;
+}
+.dt-modal-scheme-a .a-divider::before,
+.dt-modal-scheme-a .a-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, var(--divider, #e6e8eb) 50%, transparent 100%);
+}
+.dt-modal-scheme-a .a-divider span {
+  flex: 0 0 auto;
+  padding: 2px 0;
+}
+
+/* ===== 封面预览 + 表单 布局 ===== */
+.dt-modal-scheme-a .a-info-layout {
+  display: grid;
+  grid-template-columns: 150px 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+/* 左：3D 立体封面 */
+.dt-modal-scheme-a .a-cover-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+.dt-modal-scheme-a .a-cover-stack {
+  position: relative;
+  width: 140px;
+  height: 200px;
+  perspective: 1000px;
+}
+.dt-modal-scheme-a .a-cover {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 2px 6px 6px 2px;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  box-shadow:
+    0 2px 0 rgba(255,255,255,0.2) inset,
+    0 -2px 0 rgba(0,0,0,0.1) inset,
+    0 12px 28px rgba(0,0,0,0.18),
+    0 4px 10px rgba(0,0,0,0.1);
+  overflow: hidden;
+  transform-style: preserve-3d;
+}
+.dt-modal-scheme-a .a-cover-spine {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 12px;
+  height: 100%;
+  background: linear-gradient(90deg, rgba(0,0,0,0.22) 0%, rgba(0,0,0,0.08) 40%, rgba(255,255,255,0.05) 100%);
+  border-right: 1px solid rgba(0,0,0,0.1);
+  z-index: 2;
+}
+.dt-modal-scheme-a .a-cover-3d {
+  transform: rotateY(-18deg);
+}
+.dt-modal-scheme-a .a-cover-body {
+  position: absolute;
+  inset: 0;
+  padding: 18px 14px 16px 22px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.dt-modal-scheme-a .a-cover-top {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 10px;
+}
+.dt-modal-scheme-a .a-cover-initial {
+  font-size: 48px;
+  font-weight: 800;
+  color: #fff;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+.dt-modal-scheme-a .a-cover-genre {
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.18);
+  backdrop-filter: blur(4px);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.dt-modal-scheme-a .a-cover-shadow-t,
+.dt-modal-scheme-a .a-cover-shadow-b {
+  position: absolute;
+  left: 12px;
+  right: 0;
+  height: 40%;
+  pointer-events: none;
+}
+.dt-modal-scheme-a .a-cover-shadow-t {
+  top: 0;
+  background: linear-gradient(180deg, rgba(0,0,0,0.14), transparent);
+}
+.dt-modal-scheme-a .a-cover-shadow-b {
+  bottom: 0;
+  background: linear-gradient(0deg, rgba(0,0,0,0.18), transparent);
+}
+.dt-modal-scheme-a .a-cover-pages {
+  position: absolute;
+  right: -3px;
+  top: 4px;
+  bottom: 4px;
+  width: 6px;
+  background: repeating-linear-gradient(
+    180deg,
+    #fefefe 0px, #fefefe 1px,
+    #f0ede5 1px, #f0ede5 2px
+  );
+  border-radius: 0 2px 2px 0;
+  box-shadow:
+    inset -1px 0 0 rgba(0,0,0,0.06),
+    1px 0 1px rgba(0,0,0,0.06);
+}
+.dt-modal-scheme-a .a-cover-ground {
+  position: absolute;
+  bottom: -10px;
+  left: 10%;
+  right: 10%;
+  height: 16px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center, rgba(0,0,0,0.18) 0%, transparent 70%);
+  filter: blur(4px);
+}
+.dt-modal-scheme-a .a-cover-tip {
+  font-size: 11px;
+  color: var(--text-muted, #6b7280);
+  text-align: center;
+  line-height: 1.5;
+}
+
+/* ===== 表单区 ===== */
+.dt-modal-scheme-a .a-form-col { min-width: 0; }
+.dt-modal-scheme-a .a-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.dt-modal-scheme-a .a-form-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.dt-modal-scheme-a .a-form-row-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.dt-modal-scheme-a .a-form-row-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+.dt-modal-scheme-a .a-label {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text, #1f2937);
+  letter-spacing: 0.01em;
+  line-height: 1.3;
+}
+.dt-modal-scheme-a .a-label-muted {
+  color: var(--text-muted, #6b7280);
+  font-weight: 500;
+}
+.dt-modal-scheme-a .a-req {
+  color: var(--danger, #ef4444);
+  font-weight: 700;
+  margin-left: 2px;
+}
+.dt-modal-scheme-a .a-input,
+.dt-modal-scheme-a .a-select {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1.5px solid var(--divider, #d1d5db);
+  border-radius: 8px;
+  background: var(--bg-card, #fff);
+  color: var(--text, #1f2937);
+  font-size: 13.5px;
+  line-height: 1.5;
+  transition: all 0.15s ease;
+  box-sizing: border-box;
+  font-family: inherit;
+}
+.dt-modal-scheme-a .a-input::placeholder {
+  color: var(--text-muted, #9ca3af);
+}
+.dt-modal-scheme-a .a-input:hover,
+.dt-modal-scheme-a .a-select:hover {
+  border-color: rgba(79,70,229,0.35);
+}
+.dt-modal-scheme-a .a-input:focus,
+.dt-modal-scheme-a .a-select:focus {
+  outline: none;
+  border-color: var(--accent, #4f46e5);
+  box-shadow: 0 0 0 3px rgba(79,70,229,0.12);
+}
+.dt-modal-scheme-a .a-select {
+  padding-right: 28px;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  cursor: pointer;
+}
+
+/* ===== 高级设置折叠 ===== */
+.dt-modal-scheme-a .a-advanced {
+  margin-top: 14px;
+  border: 1px solid var(--divider, #e6e8eb);
+  border-radius: 10px;
+  background: var(--bg-elevated, #f7f8fa);
+  overflow: hidden;
+  transition: background 0.15s ease;
+}
+.dt-modal-scheme-a .a-advanced[open] {
+  background: var(--bg-card, #fff);
+}
+.dt-modal-scheme-a .a-advanced > summary {
+  list-style: none;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text, #1f2937);
+  user-select: none;
+  transition: background 0.15s ease;
+}
+.dt-modal-scheme-a .a-advanced > summary:hover {
+  background: rgba(79,70,229,0.04);
+}
+.dt-modal-scheme-a .a-advanced > summary::-webkit-details-marker {
+  display: none;
+}
+.dt-modal-scheme-a .a-summary-icon {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  background: rgba(79,70,229,0.1);
+  color: var(--accent, #4f46e5);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.dt-modal-scheme-a .a-summary-arrow {
+  margin-left: auto;
+  font-size: 18px;
+  color: var(--text-muted, #6b7280);
+  transition: transform 0.2s ease;
+  line-height: 1;
+}
+.dt-modal-scheme-a .a-advanced[open] .a-summary-arrow {
+  transform: rotate(90deg);
+}
+.dt-modal-scheme-a .a-advanced-body {
+  padding: 12px 14px 14px;
+  border-top: 1px solid var(--divider, #e6e8eb);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: var(--bg-card, #fff);
+}
+
+/* ===== Footer 提示 ===== */
+.dt-modal-scheme-a .dt-modal-footer {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.dt-modal-scheme-a .a-footer-tip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-muted, #6b7280);
+  margin-right: auto;
+  padding-right: 12px;
+  line-height: 1.4;
+}
+.dt-modal-scheme-a .a-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--success, #10b981);
+  box-shadow: 0 0 0 3px rgba(16,185,129,0.15);
+  flex: 0 0 6px;
+}
+
+/* ===== 响应式（窄屏） ===== */
+@media (max-width: 640px) {
+  .dt-modal-scheme-a .a-genre-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .dt-modal-scheme-a .a-demo-grid {
+    grid-template-columns: 1fr;
+  }
+  .dt-modal-scheme-a .a-info-layout {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+  .dt-modal-scheme-a .a-cover-stack {
+    width: 110px;
+    height: 160px;
+  }
+  .dt-modal-scheme-a .a-form-row-2,
+  .dt-modal-scheme-a .a-form-row-3 {
+    grid-template-columns: 1fr;
+  }
+  .dt-modal-scheme-a .a-footer-tip { display: none; }
+}
+
+/* 暗色 / 深色调适配：所有颜色用 var，自动跟随 */
+[data-theme="dark"] .dt-modal-scheme-a .a-cover-stack {
+  filter: saturate(1.1);
+}
