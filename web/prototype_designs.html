@@ -1,0 +1,1345 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>新建作品弹窗设计方案 · 原型 Demo</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: #0f172a;
+    min-height: 100vh;
+    padding: 40px 20px;
+    color: #1e293b;
+  }
+  .page-title {
+    text-align: center;
+    color: #f8fafc;
+    margin-bottom: 32px;
+  }
+  .page-title h1 {
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+  .page-title p {
+    color: #94a3b8;
+    font-size: 14px;
+  }
+  .scheme-switcher {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 32px;
+    flex-wrap: wrap;
+  }
+  .scheme-btn {
+    padding: 12px 24px;
+    border: 2px solid #334155;
+    background: transparent;
+    color: #cbd5e1;
+    border-radius: 12px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    transition: all 0.2s;
+  }
+  .scheme-btn:hover { border-color: #64748b; background: #1e293b; }
+  .scheme-btn.active {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    border-color: transparent;
+    color: #fff;
+    box-shadow: 0 8px 24px rgba(99, 102, 241, 0.4);
+  }
+  .scheme-container {
+    max-width: 1000px;
+    margin: 0 auto;
+  }
+  .scheme-panel { display: none; }
+  .scheme-panel.active { display: block; animation: fadeIn 0.3s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px);} to {opacity:1; transform: none;} }
+  .scheme-label {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+    padding: 16px 20px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+  .scheme-label-tag {
+    padding: 4px 12px;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: #fff;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .scheme-label h2 { color: #f8fafc; font-size: 18px;}
+  .scheme-label p { color: #94a3b8; font-size: 13px; margin-top: 4px;}
+  .modal-stage {
+    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+    border-radius: 24px;
+    padding: 48px 32px;
+    border: 1px solid rgba(255,255,255,0.08);
+    box-shadow: 0 32px 64px rgba(0,0,0,0.5);
+    min-height: 600px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-stage-inner {
+    width: 100%;
+    max-width: 820px;
+  }
+
+  /* ==================== 通用 Modal Backdrop ==================== */
+  .x-backdrop {
+    position: relative;
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(8px);
+    border-radius: 20px;
+    padding: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* ==================== 方案 A：极简胶囊卡片式 ==================== */
+  .a-modal {
+    width: 720px;
+    background: #ffffff;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 32px 80px rgba(0,0,0,0.4);
+  }
+  .a-header {
+    padding: 24px 32px 16px;
+    border-bottom: 1px solid #f1f5f9;
+  }
+  .a-header-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+  .a-header h3 {
+    font-size: 20px;
+    font-weight: 700;
+    color: #0f172a;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .a-close {
+    width: 32px; height: 32px;
+    border: none; background: #f1f5f9;
+    border-radius: 8px; cursor: pointer;
+    font-size: 18px; color: #64748b;
+  }
+  .a-tabs {
+    display: flex;
+    padding: 4px;
+    background: #f8fafc;
+    border-radius: 12px;
+    gap: 4px;
+  }
+  .a-tab {
+    flex: 1;
+    padding: 10px 14px;
+    border: none;
+    background: transparent;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    color: #64748b;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: all 0.2s;
+  }
+  .a-tab.active {
+    background: #ffffff;
+    color: #0f172a;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  .a-tab-icon {
+    width: 22px; height: 22px;
+    display: inline-flex; align-items: center; justify-content: center;
+    border-radius: 6px;
+    font-size: 12px;
+  }
+  .a-tab.active .a-tab-icon {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: #fff;
+  }
+  .a-body { padding: 24px 32px; }
+  .a-demo-section {
+    margin-bottom: 24px;
+  }
+  .a-hint {
+    font-size: 13px;
+    color: #64748b;
+    margin-bottom: 12px;
+    line-height: 1.6;
+  }
+  .a-hint code {
+    background: #f1f5f9;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 11px;
+    color: #6366f1;
+  }
+  .a-cards-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .a-card {
+    position: relative;
+    padding: 16px;
+    border: 2px solid #e2e8f0;
+    border-radius: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: #fff;
+  }
+  .a-card.selected {
+    border-color: #6366f1;
+    background: linear-gradient(135deg, rgba(99,102,241,0.04), rgba(139,92,246,0.04));
+    box-shadow: 0 4px 16px rgba(99,102,241,0.15);
+  }
+  .a-card-check {
+    position: absolute;
+    top: 12px; right: 12px;
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    border: 2px solid #e2e8f0;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s;
+  }
+  .a-card.selected .a-card-check {
+    background: #6366f1;
+    border-color: #6366f1;
+    color: #fff;
+    font-size: 12px;
+  }
+  .a-card-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #0f172a;
+    margin-bottom: 6px;
+  }
+  .a-card-desc {
+    font-size: 12px;
+    color: #64748b;
+    line-height: 1.5;
+  }
+  .a-divider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: #94a3b8;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin: 4px 0 20px;
+  }
+  .a-divider::before, .a-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: #e2e8f0;
+  }
+  .a-form-grid {
+    display: grid;
+    grid-template-columns: 140px 1fr;
+    gap: 24px;
+  }
+  .a-cover-preview {
+    aspect-ratio: 3/4;
+    border-radius: 8px 16px 16px 8px;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    box-shadow: 0 10px 30px rgba(102,126,234,0.4);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    position: relative;
+    overflow: hidden;
+  }
+  .a-cover-preview::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 6px;
+    background: linear-gradient(90deg, rgba(0,0,0,0.25), transparent);
+  }
+  .a-cover-initial {
+    font-family: "Songti SC", "STSong", serif;
+    font-size: 52px;
+    font-weight: 800;
+    margin-bottom: 12px;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  }
+  .a-cover-genre {
+    padding: 3px 10px;
+    background: rgba(255,255,255,0.2);
+    backdrop-filter: blur(4px);
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+    border: 1px solid rgba(255,255,255,0.3);
+  }
+  .a-form { display: flex; flex-direction: column; gap: 14px; }
+  .a-field label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: #334155;
+    margin-bottom: 5px;
+  }
+  .a-field label .req { color: #ef4444; }
+  .a-field input, .a-field select {
+    width: 100%;
+    padding: 9px 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 13px;
+    color: #0f172a;
+    background: #f8fafc;
+    transition: all 0.15s;
+    font-family: inherit;
+  }
+  .a-field input:focus, .a-field select:focus {
+    outline: none;
+    border-color: #6366f1;
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(99,102,241,0.12);
+  }
+  .a-field-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .a-field-hint {
+    font-size: 11px;
+    color: #94a3b8;
+    margin-top: 3px;
+  }
+  .a-footer {
+    padding: 16px 32px;
+    border-top: 1px solid #f1f5f9;
+    background: #fafbfc;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .a-footer-tip {
+    font-size: 12px;
+    color: #64748b;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .a-footer-tip .dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: #22c55e;
+  }
+  .a-btns { display: flex; gap: 8px; }
+  .a-btn {
+    padding: 9px 18px;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    background: #fff;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    color: #475569;
+    font-family: inherit;
+  }
+  .a-btn-primary {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    border-color: transparent;
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(99,102,241,0.3);
+  }
+
+  /* ==================== 方案 B：分步骤向导式 ==================== */
+  .b-modal {
+    width: 760px;
+    background: #fff;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 32px 80px rgba(0,0,0,0.4);
+  }
+  .b-header {
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 30%, #fbbf24 100%);
+    padding: 28px 36px 24px;
+    position: relative;
+    overflow: hidden;
+  }
+  .b-header::after {
+    content: '✨';
+    position: absolute;
+    right: 30px;
+    top: 20px;
+    font-size: 60px;
+    opacity: 0.15;
+  }
+  .b-header-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+  .b-header h3 {
+    font-size: 22px;
+    font-weight: 800;
+    color: #78350f;
+    margin-bottom: 4px;
+  }
+  .b-header-sub {
+    font-size: 13px;
+    color: #92400e;
+    opacity: 0.8;
+  }
+  .b-close {
+    width: 32px; height: 32px;
+    border: none; background: rgba(255,255,255,0.6);
+    border-radius: 8px; cursor: pointer;
+    font-size: 18px; color: #78350f;
+  }
+  .b-steps {
+    display: flex;
+    gap: 8px;
+    position: relative;
+  }
+  .b-step {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: rgba(255,255,255,0.5);
+    border-radius: 10px;
+    transition: all 0.2s;
+  }
+  .b-step.active {
+    background: #fff;
+    box-shadow: 0 2px 8px rgba(120,53,15,0.15);
+  }
+  .b-step-num {
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    background: rgba(120,53,15,0.15);
+    color: #92400e;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .b-step.active .b-step-num {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: #fff;
+  }
+  .b-step-text {
+    font-size: 12px;
+    font-weight: 600;
+    color: #92400e;
+    opacity: 0.7;
+  }
+  .b-step.active .b-step-text { opacity: 1; }
+  .b-body {
+    padding: 28px 36px;
+  }
+  .b-step-panel {
+    display: none;
+  }
+  .b-step-panel.active { display: block; animation: fadeIn 0.3s ease; }
+  .b-option-group-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #0f172a;
+    margin-bottom: 6px;
+  }
+  .b-option-group-desc {
+    font-size: 13px;
+    color: #64748b;
+    margin-bottom: 16px;
+    line-height: 1.6;
+  }
+  .b-options-col {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .b-option {
+    display: flex;
+    align-items: stretch;
+    border: 2px solid #e2e8f0;
+    border-radius: 14px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: #fff;
+  }
+  .b-option.selected {
+    border-color: #f59e0b;
+    background: linear-gradient(135deg, #fffbeb, #fef3c7);
+    box-shadow: 0 4px 16px rgba(245,158,11,0.18);
+  }
+  .b-option-icon {
+    width: 72px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    background: #f8fafc;
+  }
+  .b-option.selected .b-option-icon {
+    background: linear-gradient(135deg, #fde68a, #fbbf24);
+  }
+  .b-option-body {
+    flex: 1;
+    padding: 14px 16px;
+  }
+  .b-option-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #0f172a;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .b-badge {
+    padding: 2px 8px;
+    background: linear-gradient(135deg, #fef3c7, #fde68a);
+    border-radius: 999px;
+    font-size: 10px;
+    font-weight: 700;
+    color: #92400e;
+  }
+  .b-option-desc {
+    font-size: 12px;
+    color: #64748b;
+    line-height: 1.5;
+  }
+  .b-option-check {
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    border: 2px solid #e2e8f0;
+    margin: auto 16px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .b-option.selected .b-option-check {
+    background: #f59e0b;
+    border-color: #f59e0b;
+    color: #fff;
+    font-size: 12px;
+  }
+  .b-form {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  .b-form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .b-form-field.full { grid-column: 1 / -1; }
+  .b-form-field label {
+    font-size: 12px;
+    font-weight: 700;
+    color: #334155;
+  }
+  .b-form-field label .req { color: #dc2626; }
+  .b-form-field input, .b-form-field select {
+    padding: 11px 14px;
+    border: 2px solid #e2e8f0;
+    border-radius: 10px;
+    font-size: 14px;
+    color: #0f172a;
+    background: #fafbfc;
+    transition: all 0.15s;
+    font-family: inherit;
+  }
+  .b-form-field input:focus, .b-form-field select:focus {
+    outline: none;
+    border-color: #f59e0b;
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(245,158,11,0.15);
+  }
+  .b-form-hint {
+    grid-column: 1 / -1;
+    padding: 12px 16px;
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+    border-radius: 10px;
+    font-size: 12px;
+    color: #92400e;
+    line-height: 1.6;
+    display: flex;
+    gap: 8px;
+  }
+  .b-footer {
+    padding: 16px 36px;
+    border-top: 1px solid #f1f5f9;
+    background: #fafbfc;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .b-step-indicator {
+    font-size: 12px;
+    color: #64748b;
+    font-weight: 600;
+  }
+  .b-step-indicator b { color: #f59e0b; }
+  .b-btns { display: flex; gap: 8px; }
+  .b-btn {
+    padding: 10px 20px;
+    border-radius: 10px;
+    border: 2px solid #e2e8f0;
+    background: #fff;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 700;
+    color: #475569;
+    font-family: inherit;
+  }
+  .b-btn-primary {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    border-color: transparent;
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(245,158,11,0.35);
+  }
+
+  /* ==================== 方案 C：双栏沉浸式 ==================== */
+  .c-modal {
+    width: 820px;
+    background: #0b1220;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 32px 80px rgba(0,0,0,0.6);
+    display: grid;
+    grid-template-columns: 280px 1fr;
+  }
+  .c-sidebar {
+    background:
+      radial-gradient(ellipse at top left, rgba(99,102,241,0.3), transparent 50%),
+      radial-gradient(ellipse at bottom right, rgba(139,92,246,0.25), transparent 50%),
+      #0f172a;
+    padding: 28px 24px;
+    border-right: 1px solid rgba(255,255,255,0.06);
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+  }
+  .c-sidebar-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 28px;
+    font-size: 15px;
+    font-weight: 700;
+  }
+  .c-sidebar-brand-icon {
+    width: 32px; height: 32px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+  }
+  .c-sidebar-title {
+    font-size: 18px;
+    font-weight: 800;
+    margin-bottom: 4px;
+  }
+  .c-sidebar-sub {
+    font-size: 12px;
+    color: rgba(226,232,240,0.6);
+    margin-bottom: 24px;
+    line-height: 1.5;
+  }
+  .c-create-types {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex: 1;
+  }
+  .c-create-type {
+    padding: 14px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 1px solid rgba(255,255,255,0.06);
+    background: rgba(255,255,255,0.02);
+  }
+  .c-create-type:hover {
+    background: rgba(255,255,255,0.05);
+  }
+  .c-create-type.active {
+    background: linear-gradient(135deg, rgba(99,102,241,0.25), rgba(139,92,246,0.2));
+    border-color: rgba(99,102,241,0.5);
+    box-shadow: inset 0 0 0 1px rgba(99,102,241,0.3), 0 4px 16px rgba(99,102,241,0.2);
+  }
+  .c-create-type-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 6px;
+  }
+  .c-create-type-icon {
+    width: 28px; height: 28px;
+    border-radius: 8px;
+    background: rgba(255,255,255,0.08);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+  }
+  .c-create-type.active .c-create-type-icon {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  }
+  .c-create-type-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: #fff;
+  }
+  .c-create-type-desc {
+    font-size: 11px;
+    color: rgba(226,232,240,0.5);
+    line-height: 1.5;
+    padding-left: 38px;
+  }
+  .c-sidebar-foot {
+    padding-top: 16px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+    margin-top: 16px;
+  }
+  .c-tip {
+    display: flex;
+    gap: 8px;
+    font-size: 11px;
+    color: rgba(226,232,240,0.5);
+    line-height: 1.5;
+  }
+  .c-tip-icon { font-size: 14px; }
+  .c-main {
+    display: flex;
+    flex-direction: column;
+    background: #f8fafc;
+    min-height: 520px;
+  }
+  .c-main-head {
+    padding: 20px 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid #e2e8f0;
+    background: #fff;
+  }
+  .c-main-head h3 {
+    font-size: 17px;
+    font-weight: 700;
+    color: #0f172a;
+  }
+  .c-close {
+    width: 32px; height: 32px;
+    border: none; background: #f1f5f9;
+    border-radius: 8px; cursor: pointer;
+    font-size: 18px; color: #64748b;
+  }
+  .c-main-body {
+    flex: 1;
+    padding: 24px 28px;
+    overflow-y: auto;
+  }
+  .c-section {
+    margin-bottom: 22px;
+  }
+  .c-section-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: #334155;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .c-section-title::before {
+    content: '';
+    width: 3px; height: 14px;
+    background: linear-gradient(180deg, #6366f1, #8b5cf6);
+    border-radius: 2px;
+  }
+  .c-demo-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .c-demo-item {
+    padding: 14px 16px;
+    background: #fff;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .c-demo-item.selected {
+    border-color: #6366f1;
+    background: linear-gradient(135deg, rgba(99,102,241,0.04), #fff);
+  }
+  .c-demo-thumb {
+    width: 44px; height: 56px;
+    border-radius: 6px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: "Songti SC", serif;
+    font-size: 20px;
+    font-weight: 800;
+    color: #fff;
+  }
+  .c-demo-info { flex: 1; min-width: 0; }
+  .c-demo-name {
+    font-size: 14px;
+    font-weight: 700;
+    color: #0f172a;
+    margin-bottom: 3px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .c-demo-tag {
+    padding: 1px 6px;
+    background: #e0e7ff;
+    color: #4f46e5;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 700;
+  }
+  .c-demo-desc {
+    font-size: 12px;
+    color: #64748b;
+    line-height: 1.5;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .c-demo-radio {
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    border: 2px solid #cbd5e1;
+    flex-shrink: 0;
+  }
+  .c-demo-item.selected .c-demo-radio {
+    border-color: #6366f1;
+    background: #6366f1;
+    box-shadow: inset 0 0 0 4px #fff;
+  }
+  .c-form-layout {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+  .c-field label {
+    display: block;
+    font-size: 12px;
+    font-weight: 700;
+    color: #334155;
+    margin-bottom: 5px;
+  }
+  .c-field label .req { color: #ef4444; }
+  .c-field input, .c-field select {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 10px;
+    font-size: 13px;
+    color: #0f172a;
+    background: #fff;
+    transition: all 0.15s;
+    font-family: inherit;
+  }
+  .c-field input:focus, .c-field select:focus {
+    outline: none;
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99,102,241,0.12);
+  }
+  .c-field-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+  .c-advanced {
+    margin-top: 16px;
+    padding: 14px 16px;
+    background: #fff;
+    border: 1px dashed #cbd5e1;
+    border-radius: 10px;
+  }
+  .c-advanced summary {
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 700;
+    color: #475569;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .c-advanced[open] summary::after { content: '−'; }
+  .c-advanced summary::after {
+    content: '+';
+    font-size: 16px;
+    font-weight: 400;
+  }
+  .c-advanced-body {
+    margin-top: 14px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+  .c-main-footer {
+    padding: 16px 28px;
+    border-top: 1px solid #e2e8f0;
+    background: #fff;
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+  .c-btn {
+    padding: 9px 20px;
+    border-radius: 10px;
+    border: 1.5px solid #e2e8f0;
+    background: #fff;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    color: #475569;
+    font-family: inherit;
+  }
+  .c-btn-primary {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    border-color: transparent;
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(99,102,241,0.35);
+  }
+
+  /* Demo 选中态说明 */
+  .demo-notes {
+    max-width: 1000px;
+    margin: 32px auto 0;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+  .demo-note {
+    padding: 20px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 14px;
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+  .demo-note h4 {
+    color: #f1f5f9;
+    font-size: 14px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .demo-note ul {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .demo-note li {
+    color: #94a3b8;
+    font-size: 12px;
+    line-height: 1.6;
+    padding-left: 14px;
+    position: relative;
+  }
+  .demo-note li::before {
+    content: '✓';
+    position: absolute;
+    left: 0;
+    color: #22c55e;
+    font-weight: 700;
+  }
+</style>
+</head>
+<body>
+
+<div class="page-title">
+  <h1>🎨 新建作品弹窗 · 三种设计方案</h1>
+  <p>点击下方按钮切换不同方案，选择示例项目选择后均已自动回填并支持编辑</p>
+</div>
+
+<div class="scheme-switcher">
+  <button class="scheme-btn active" data-scheme="a">方案 A · 极简胶囊卡</button>
+  <button class="scheme-btn" data-scheme="b">方案 B · 分步向导</button>
+  <button class="scheme-btn" data-scheme="c">方案 C · 双栏沉浸</button>
+</div>
+
+<div class="scheme-container">
+
+  <!-- 方案 A -->
+  <div class="scheme-panel active" id="scheme-a">
+    <div class="scheme-label">
+      <span class="scheme-label-tag">A</span>
+      <div>
+        <h2>极简胶囊卡片式 · Notion/Linear 风</h2>
+        <p>单屏完成所有操作，胶囊 Tab 切换，卡片选中有发光边框。适合追求效率的用户</p>
+      </div>
+    </div>
+    <div class="modal-stage">
+      <div class="modal-stage-inner">
+        <div class="x-backdrop">
+          <div class="a-modal">
+            <div class="a-header">
+              <div class="a-header-top">
+                <h3>✨ 新建作品</h3>
+                <button class="a-close">×</button>
+              </div>
+              <div class="a-tabs">
+                <button class="a-tab"><span class="a-tab-icon">📄</span>空白项目</button>
+                <button class="a-tab"><span class="a-tab-icon">🧩</span>类型模板</button>
+                <button class="a-tab active"><span class="a-tab-icon">🎬</span>示例项目</button>
+              </div>
+            </div>
+            <div class="a-body">
+              <div class="a-demo-section">
+                <p class="a-hint">选择一个已写好的示例项目导入，作为学习模板快速上手。<code>已自动回填信息，可自由修改名称和信息</code></p>
+                <div class="a-cards-grid">
+                  <div class="a-card selected">
+                  <div class="a-card-check">✓</div>
+                  <div class="a-card-title">斗破苍穹 · 5章示例</div>
+                  <div class="a-card-desc">萧炎三年之约·5章草稿+章纲+4个角色完整档案</div>
+                </div>
+                <div class="a-card">
+                  <div class="a-card-check"></div>
+                  <div class="a-card-title">问剑长歌 · 完整Demo</div>
+                  <div class="a-card-desc">东方玄幻·五卷总纲·42章节奏·6角色·31伏笔</div>
+                </div>
+                </div>
+              </div>
+              <div class="a-divider"><span>作品信息（已自动填入，可编辑）</span></div>
+              <div class="a-form-grid">
+                <div class="a-cover-preview" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                  <div class="a-cover-initial">斗</div>
+                  <div class="a-cover-genre">玄幻</div>
+                </div>
+                <div class="a-form">
+                  <div class="a-field">
+                    <label>作品名称 <span class="req">*</span></label>
+                    <input type="text" value="斗破苍穹·我的改编版">
+                  </div>
+                  <div class="a-field">
+                    <label>副标题 / 一句话简介</label>
+                    <input type="text" value="三年之约，莫欺少年穷 — 基于示例改编">
+                  </div>
+                  <div class="a-field-row">
+                    <div class="a-field">
+                      <label>类型 / 题材</label>
+                      <input type="text" value="玄幻">
+                    </div>
+                    <div class="a-field">
+                      <label>作者 / 笔名</label>
+                      <input type="text" value="天蚕土豆（改编）">
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="a-footer">
+              <div class="a-footer-tip"><span class="dot"></span>选中示例项目后信息已自动填入，可修改后创建</div>
+              <div class="a-btns">
+                <button class="a-btn">取消</button>
+                <button class="a-btn a-btn-primary">🚀 创建作品</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 方案 B -->
+  <div class="scheme-panel" id="scheme-b">
+    <div class="scheme-label">
+      <span class="scheme-label-tag">B</span>
+      <div>
+        <h2>分步骤向导式 · Apple/Stripe Onboarding 风</h2>
+        <p>三步引导式流程，降低认知负荷。适合新手用户，每步只做一件事</p>
+      </div>
+    </div>
+    <div class="modal-stage">
+      <div class="modal-stage-inner">
+        <div class="x-backdrop">
+          <div class="b-modal">
+            <div class="b-header">
+              <div class="b-header-top">
+                <div>
+                  <h3>开启你的创作之旅</h3>
+                  <div class="b-header-sub">只需三步，快速搭建你的作品</div>
+                </div>
+                <button class="b-close">×</button>
+              </div>
+              <div class="b-steps">
+                <div class="b-step active"><div class="b-step-num">1</div><div class="b-step-text">选择创建方式</div></div>
+                <div class="b-step"><div class="b-step-num">2</div><div class="b-step-text">填写作品信息</div></div>
+                <div class="b-step"><div class="b-step-num">3</div><div class="b-step-text">确认并创建</div></div>
+              </div>
+            </div>
+            <div class="b-body">
+              <div class="b-step-panel active">
+                <div class="b-option-group-title">选择创建方式</div>
+                <div class="b-option-group-desc">推荐新手用户推荐「从示例项目开始，可快速上手 DreamTale 的完整流程</div>
+                <div class="b-options-col">
+                  <div class="b-option">
+                    <div class="b-option-icon">📄</div>
+                    <div class="b-option-body">
+                      <div class="b-option-title">空白项目</div>
+                      <div class="b-option-desc">从一个包含 00-05 目录骨架的空白项目开始，完全自定义</div>
+                    </div>
+                    <div class="b-option-check"></div>
+                  </div>
+                  <div class="b-option">
+                    <div class="b-option-icon">🧩</div>
+                    <div class="b-option-body">
+                      <div class="b-option-title">从类型模板 <span class="b-badge">11种</span></div>
+                      <div class="b-option-desc">选择网文类型模板：预置设定模板 + 大纲节奏 + 通用9模块</div>
+                    </div>
+                    <div class="b-option-check"></div>
+                  </div>
+                  <div class="b-option selected">
+                    <div class="b-option-icon">🎬</div>
+                    <div class="b-option-body">
+                      <div class="b-option-title">从示例项目 <span class="b-badge">推荐</span></div>
+                      <div class="b-option-desc">选择已写好的示例导入，信息将自动回填作品信息，下一步可自由编辑名称</div>
+                    </div>
+                    <div class="b-option-check">✓</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="b-footer">
+              <div class="b-step-indicator">第 <b>1</b> / 3 步</div>
+              <div class="b-btns">
+                <button class="b-btn">取消</button>
+                <button class="b-btn b-btn-primary">下一步 →</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 方案 C -->
+  <div class="scheme-panel" id="scheme-c">
+    <div class="scheme-label">
+      <span class="scheme-label-tag">C</span>
+      <div>
+        <h2>双栏沉浸式 · Figma/VSCode 风</h2>
+        <p>左侧选模式导航，右侧内容区动态切换。深色侧栏渐变氛围感拉满</p>
+      </div>
+    </div>
+    <div class="modal-stage">
+      <div class="modal-stage-inner">
+        <div class="x-backdrop">
+          <div class="c-modal">
+            <div class="c-sidebar">
+              <div class="c-sidebar-brand"><div class="c-sidebar-brand-icon">📚</div>DreamTale</div>
+              <div class="c-sidebar-title">创建新作品</div>
+              <div class="c-sidebar-sub">选择一种方式开始你的创作旅程</div>
+              <div class="c-create-types">
+                <div class="c-create-type">
+                  <div class="c-create-type-head">
+                    <div class="c-create-type-icon">📄</div>
+                    <div class="c-create-type-title">空白项目</div>
+                  </div>
+                  <div class="c-create-type-desc">干净的骨架，自由发挥</div>
+                </div>
+                <div class="c-create-type">
+                  <div class="c-create-type-head">
+                    <div class="c-create-type-icon">🧩</div>
+                    <div class="c-create-type-title">类型模板</div>
+                  </div>
+                  <div class="c-create-type-desc">11种网文类型一键套用</div>
+                </div>
+                <div class="c-create-type active">
+                  <div class="c-create-type-head">
+                    <div class="c-create-type-icon">🎬</div>
+                    <div class="c-create-type-title">示例项目</div>
+                  </div>
+                  <div class="c-create-type-desc">推荐：示例导入，自动回填信息</div>
+                </div>
+              </div>
+              <div class="c-sidebar-foot">
+                <div class="c-tip">
+                  <span class="c-tip-icon">💡</span>
+                  <span>基于示例创建后，所有内容仍可自由修改</span>
+                </div>
+              </div>
+            </div>
+            <div class="c-main">
+              <div class="c-main-head">
+                <h3>选择示例项目 → 填写作品信息</h3>
+                <button class="c-close">×</button>
+              </div>
+              <div class="c-main-body">
+                <div class="c-section">
+                  <div class="c-section-title">选择示例</div>
+                  <div class="c-demo-list">
+                    <div class="c-demo-item selected">
+                      <div class="c-demo-thumb" style="background: linear-gradient(135deg, #f093fb, #f5576c);">斗</div>
+                      <div class="c-demo-info">
+                        <div class="c-demo-name">斗破苍穹·5章示例 <span class="c-demo-tag">热门</span></div>
+                        <div class="c-demo-desc">萧炎三年之约·5章草稿+章纲+4个角色完整档案</div>
+                      </div>
+                      <div class="c-demo-radio"></div>
+                    </div>
+                    <div class="c-demo-item">
+                      <div class="c-demo-thumb" style="background: linear-gradient(135deg, #667eea, #764ba2);">问</div>
+                      <div class="c-demo-info">
+                        <div class="c-demo-name">问剑长歌·完整Demo <span class="c-demo-tag">全功能</span></div>
+                        <div class="c-demo-desc">东方玄幻·五卷总纲·42章节奏曲线·6角色·31伏笔</div>
+                      </div>
+                      <div class="c-demo-radio"></div>
+                    </div>
+                  </div>
+                </div>
+                <div class="c-section">
+                  <div class="c-section-title">作品信息</div>
+                  <div class="c-form-layout">
+                    <div class="c-field">
+                      <label>作品名称 <span class="req">*</span></label>
+                      <input type="text" value="斗破苍穹·我的改编版">
+                    </div>
+                    <div class="c-field">
+                      <label>副标题 / 一句话简介</label>
+                      <input type="text" value="三年之约，莫欺少年穷 — 基于示例改编">
+                    </div>
+                    <div class="c-field-row">
+                      <div class="c-field"><label>类型</label><input type="text" value="玄幻"></div>
+                      <div class="c-field"><label>作者</label><input type="text" value="天蚕土豆（改编）"></div>
+                    </div>
+                    <details class="c-advanced">
+                      <summary>高级设置（字数、章节、卷数等）</summary>
+                      <div class="c-advanced-body">
+                        <div class="c-field"><label>目标字数</label><input type="number" value="1000000"></div>
+                        <div class="c-field"><label>总章节</label><input type="number" value="200"></div>
+                        <div class="c-field"><label>总卷数</label><input type="number" value="5"></div>
+                      </div>
+                    </details>
+                  </div>
+                </div>
+              </div>
+              <div class="c-main-footer">
+                <button class="c-btn">取消</button>
+                <button class="c-btn c-btn-primary">🚀 创建作品</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="demo-notes">
+  <div class="demo-note">
+    <h4>方案 A · 适用场景</h4>
+    <ul>
+      <li>效率优先，操作熟练老用户</li>
+      <li>单屏完成，不需要切换少</li>
+      <li>现代简洁，容易维护</li>
+      <li>表单和模板卡片 + 封面预览左右分栏</li>
+    </ul>
+  </div>
+  <div class="demo-note">
+    <h4>方案 B · 适用场景</h4>
+    <ul>
+      <li>新手友好，降低认知压力</li>
+      <li>每步只做一个决策</li>
+      <li>暖色氛围感强，产品感强</li>
+      <li>分步进度条清晰可见</li>
+    </ul>
+  </div>
+  <div class="demo-note">
+    <h4>方案 C · 适用场景</h4>
+    <ul>
+      <li>专业创作工具感</li>
+      <li>左导航+右内容经典布局</li>
+      <li>深色侧栏氛围感拉满</li>
+      <li>高级设置折叠，减少干扰</li>
+    </ul>
+  </div>
+</div>
+
+<script>
+  // 方案切换
+  document.querySelectorAll('.scheme-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.scheme-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.scheme-panel').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('scheme-' + btn.dataset.scheme).classList.add('active');
+    });
+  });
+
+  // 方案A：卡片选择
+  document.querySelectorAll('#scheme-a .a-card').forEach(card => {
+    card.addEventListener('click', () => {
+      document.querySelectorAll('#scheme-a .a-card').forEach(c => {
+        c.classList.remove('selected');
+        c.querySelector('.a-card-check').textContent = '';
+      });
+      card.classList.add('selected');
+      card.querySelector('.a-card-check').textContent = '✓';
+    });
+  });
+
+  // 方案B：选项选择
+  document.querySelectorAll('#scheme-b .b-option').forEach(opt => {
+    opt.addEventListener('click', () => {
+      document.querySelectorAll('#scheme-b .b-option').forEach(o => {
+        o.classList.remove('selected');
+        o.querySelector('.b-option-check').textContent = '';
+      });
+      opt.classList.add('selected');
+      opt.querySelector('.b-option-check').textContent = '✓';
+    });
+  });
+
+  // 方案C：选项选择
+  document.querySelectorAll('#scheme-c .c-demo-item, #scheme-c .c-create-type').forEach(item => {
+    item.addEventListener('click', (e) => {
+      if (item.classList.contains('c-demo-item')) {
+        document.querySelectorAll('#scheme-c .c-demo-item').forEach(i => i.classList.remove('selected'));
+      } else {
+        document.querySelectorAll('#scheme-c .c-create-type').forEach(i => i.classList.remove('selected'));
+      }
+      item.classList.add('selected');
+    });
+  });
+</script>
+</body>
+</html>
