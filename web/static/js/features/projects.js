@@ -43,13 +43,19 @@
     { code: '11', slug: 'zhongtian', label: '种田经营类', icon: '🌾', hint: '随身装着一口泉、放开那个女巫' },
   ];
 
-  // 可用的示例项目：label 对应 assets/XXX.zip
+  // 可用的示例项目：label 对应 static/assets/XXX.zip
   const DEMO_PROJECTS = [
-    { key: 'doupo', label: '斗破苍穹·5 章示例', zip: 'assets/doupo-vault.zip',
+    { key: 'doupo', label: '斗破苍穹·5 章示例', zip: 'static/assets/doupo-vault.zip',
       desc: '萧炎三年之约·5 章草稿+章纲+4 个角色完整档案（玄幻升级流标杆）' },
-    { key: 'wenjian', label: '问剑长歌·示例 Demo', zip: 'assets/seed-vault.zip',
+    { key: 'wenjian', label: '问剑长歌·示例 Demo', zip: 'static/assets/seed-vault.zip',
       desc: '东方玄幻·五卷总纲·42 章节奏曲线·6 角色·31 个伏笔（完整演示 Vault 结构）' },
   ];
+
+  // 为每个示例项目预填默认表单值（用户可编辑覆盖）
+  const DEMO_PROJECT_META = {
+    doupo: { name: '斗破苍穹·我的改编版', subtitle: '三年之约，莫欺少年穷 — 基于示例改编', genre: '玄幻', author: '天蚕土豆（改编）' },
+    wenjian: { name: '问剑长歌·重制版', subtitle: '东方玄幻·问剑长歌 — 五卷架构改编', genre: '玄幻', author: 'DreamTale（改编）' },
+  };
 
   /** 取 base URL（用于 fetch 静态 ZIP，兼容魔搭部署在子路径的场景） */
   function baseUrl() {
@@ -418,7 +424,7 @@
       }
     }
 
-    // ---------- 新建/编辑 模态框 ----------
+    // ---------- 新建/编辑 模态框 · 方案 A：极简胶囊卡片式 ----------
     function openProjectModal(proj) {
       const isEdit = !!proj;
       const data = isEdit
@@ -438,237 +444,311 @@
             volumes_done: 0,
           };
 
-      // 创建方式（仅新建时展示）：blank / genre / demo
-      const defaultCreateMode = 'blank';
-
       const overlay = createModal({
         title: isEdit ? '✏️ 编辑作品' : '✨ 新建作品',
-        extraClass: 'dt-project-modal-large',
+        extraClass: 'dt-project-modal-large dt-modal-scheme-a',
         bodyHTML: `
-          <div class="dt-project-form">
+          <div class="a-scheme">
             ${!isEdit ? `
-            <!-- 创建方式 Tab（仅新建） -->
-            <div class="dt-create-mode-tabs" id="dt-create-mode-tabs">
-              <button type="button" class="dt-create-tab dt-create-tab--active" data-mode="blank">
-                <span class="dt-create-tab-icon">📄</span>
-                <span class="dt-create-tab-label">空白项目</span>
+            <!-- ================ 第一区：创建方式 · 胶囊 Tab ================ -->
+            <div class="a-create-tabs">
+              <button type="button" class="a-tab a-tab--active" data-mode="blank">
+                <span class="a-tab-icon">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                </span>
+                <span>空白项目</span>
               </button>
-              <button type="button" class="dt-create-tab" data-mode="genre">
-                <span class="dt-create-tab-icon">🧩</span>
-                <span class="dt-create-tab-label">从类型模板</span>
+              <button type="button" class="a-tab" data-mode="genre">
+                <span class="a-tab-icon">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                </span>
+                <span>类型模板</span>
               </button>
-              <button type="button" class="dt-create-tab" data-mode="demo">
-                <span class="dt-create-tab-icon">🎬</span>
-                <span class="dt-create-tab-label">从示例项目</span>
+              <button type="button" class="a-tab" data-mode="demo">
+                <span class="a-tab-icon">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+                </span>
+                <span>示例项目</span>
               </button>
             </div>
 
-            <!-- Tab 子面板 -->
-            <div class="dt-create-panel" id="dt-create-panel-blank">
-              <p class="dt-create-panel-hint">从一个已包含 00-05 目录骨架 + 11 种网文类型模板库的空白项目开始，完全自定义。</p>
+            <!-- ================ 第二区：Tab 内容卡片 ================ -->
+
+            <!-- 空白 · 极简提示卡 -->
+            <div class="a-panel" id="dt-create-panel-blank">
+              <div class="a-blank-card a-card-active">
+                <div class="a-blank-icon">📄</div>
+                <div class="a-blank-body">
+                  <div class="a-blank-title">标准目录骨架 · 完全自定义</div>
+                  <div class="a-blank-desc">已包含 00_控制面 / 01_世界观 / 02_角色 / 03_素材库 / 04_大纲与脉络 / 05_正文 六大目录，+ 11 种网文类型模板库（07_类型模板/），完全空白由你动笔。</div>
+                </div>
+                <div class="a-blank-badge">推荐</div>
+              </div>
             </div>
 
-            <div class="dt-create-panel dt-create-panel--hidden" id="dt-create-panel-genre">
-              <div class="dt-create-panel-hint">选择一个网文类型作为起点：预置该类型的「专属设定模板 + 大纲节奏模板 + 通用 9 模块」。
-                创建后类型模板文件位于 <code>07_类型模板/</code>。</div>
-              <div class="dt-genre-grid">
+            <!-- 类型模板 · 11 宫格 -->
+            <div class="a-panel a-panel--hidden" id="dt-create-panel-genre">
+              <div class="a-section-label">
+                <span class="a-section-icon">🧩</span>
+                选择类型模板（创建后位于 <code>07_类型模板/</code>）
+              </div>
+              <div class="a-genre-grid">
                 ${GENRE_TEMPLATES.map(g => `
-                  <label class="dt-genre-card">
+                  <label class="a-genre-card">
                     <input type="radio" name="dt-genre" value="${g.code}:${g.slug}:${g.label}" />
-                    <div class="dt-genre-card-inner">
-                      <div class="dt-genre-card-icon">${g.icon}</div>
-                      <div class="dt-genre-card-title">${g.label}</div>
-                      <div class="dt-genre-card-hint">${g.hint}</div>
+                    <div class="a-genre-card-bg"></div>
+                    <div class="a-genre-card-inner">
+                      <div class="a-genre-icon-bg"><span>${g.icon}</span></div>
+                      <div class="a-genre-name">${g.label}</div>
+                      <div class="a-genre-hint">${g.hint}</div>
+                    </div>
+                    <div class="a-checkmark">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
                     </div>
                   </label>
                 `).join('')}
               </div>
             </div>
 
-            <div class="dt-create-panel dt-create-panel--hidden" id="dt-create-panel-demo">
-              <div class="dt-create-panel-hint">选择一个已写好的示例项目导入，作为学习模板快速上手。</div>
-              <div class="dt-demo-grid">
-                ${DEMO_PROJECTS.map(d => `
-                  <label class="dt-demo-card">
+            <!-- 示例项目 · 双列大卡片 -->
+            <div class="a-panel a-panel--hidden" id="dt-create-panel-demo">
+              <div class="a-section-label">
+                <span class="a-section-icon">🎬</span>
+                导入完整示例项目（章节 / 角色 / 伏笔 / 节奏曲线全部自带）
+              </div>
+              <div class="a-demo-grid">
+                ${DEMO_PROJECTS.map((d, i) => `
+                  <label class="a-demo-card" data-demo-key="${d.key}" style="--demo-accent: ${i === 0 ? '#e85d4c' : '#5b8def'};">
                     <input type="radio" name="dt-demo" value="${d.key}" />
-                    <div class="dt-demo-card-inner">
-                      <div class="dt-demo-card-title">${d.label}</div>
-                      <div class="dt-demo-card-desc">${d.desc}</div>
+                    <div class="a-demo-bg"></div>
+                    <div class="a-demo-icon-bg">${i === 0 ? '🔥' : '⚔️'}</div>
+                    <div class="a-demo-title">${d.label}</div>
+                    <div class="a-demo-desc">${d.desc}</div>
+                    <div class="a-checkmark">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
                     </div>
                   </label>
                 `).join('')}
               </div>
             </div>
+
+            <!-- 中文分隔符 -->
+            <div class="a-divider"><span>📖 作品信息</span></div>
             ` : ''}
 
-            <!-- 基础信息（编辑和新建都展示，新建非 demo 时可填） -->
-            <div class="dt-project-form-divider" id="dt-project-form-divider">
-              <span>作品基础信息</span>
-            </div>
-            <div class="dt-form">
-              <div class="dt-form-row">
-                <label>作品名称 <span class="dt-req">*</span></label>
-                <input type="text" data-field="name" value="${esc(data.name)}" placeholder="如：星河序曲" maxlength="60" />
+            <!-- ================ 第三区：封面预览 + 表单 ================ -->
+            <div class="a-info-layout">
+              <!-- 左：封面预览（立体书脊） -->
+              <div class="a-cover-col">
+                <div class="a-cover-stack">
+                  <div class="a-cover a-cover-3d" id="dt-a-cover">
+                    <div class="a-cover-spine"></div>
+                    <div class="a-cover-body">
+                      <div class="a-cover-top">
+                        <div class="a-cover-initial" id="dt-a-cover-initial">书</div>
+                        <div class="a-cover-genre" id="dt-a-cover-genre">原创</div>
+                      </div>
+                      <div class="a-cover-shadow-t"></div>
+                      <div class="a-cover-shadow-b"></div>
+                    </div>
+                    <div class="a-cover-pages"></div>
+                  </div>
+                  <div class="a-cover-ground"></div>
+                </div>
+                <div class="a-cover-tip">封面将根据名称与题材自动生成渐变色</div>
               </div>
-              <div class="dt-form-row">
-                <label>副标题 / 一句话简介</label>
-                <input type="text" data-field="subtitle" value="${esc(data.subtitle)}" placeholder="吸引人的一句话简介，会展示在书籍卡片上" maxlength="120" />
-              </div>
-              <div class="dt-form-row dt-form-row-2col">
-                <div>
-                  <label>类型 / 题材</label>
-                  <input type="text" data-field="genre" value="${esc(data.genre)}" placeholder="如：玄幻/都市/科幻/历史" list="dt-genre-list" />
-                  <datalist id="dt-genre-list">
-                    <option value="玄幻"></option>
-                    <option value="仙侠"></option>
-                    <option value="都市"></option>
-                    <option value="科幻"></option>
-                    <option value="历史"></option>
-                    <option value="悬疑"></option>
-                    <option value="言情"></option>
-                    <option value="游戏"></option>
-                    <option value="竞技"></option>
-                    <option value="灵异"></option>
-                    <option value="同人"></option>
-                    <option value="轻小说"></option>
-                    <option value="现实"></option>
-                    <option value="军事"></option>
-                    <option value="短篇"></option>
-                  </datalist>
+
+              <!-- 右：精简表单 4 字段 + 高级折叠 -->
+              <div class="a-form-col">
+                <div class="a-form">
+                  <div class="a-form-row">
+                    <label class="a-label">作品名称 <span class="a-req">*</span></label>
+                    <input type="text" class="a-input" data-field="name" value="${esc(data.name)}" placeholder="如：星河序曲" maxlength="60" />
+                  </div>
+                  <div class="a-form-row">
+                    <label class="a-label">副标题 · 一句话简介</label>
+                    <input type="text" class="a-input" data-field="subtitle" value="${esc(data.subtitle)}" placeholder="吸引人的一句话，会展示在书籍卡片上" maxlength="120" />
+                  </div>
+                  <div class="a-form-row a-form-row-2">
+                    <div>
+                      <label class="a-label">类型 · 题材</label>
+                      <input type="text" class="a-input" data-field="genre" value="${esc(data.genre)}" placeholder="玄幻 / 都市 / 科幻…" list="dt-a-genre-list" />
+                      <datalist id="dt-a-genre-list">
+                        <option value="玄幻"></option><option value="仙侠"></option><option value="都市"></option>
+                        <option value="科幻"></option><option value="历史"></option><option value="悬疑"></option>
+                        <option value="言情"></option><option value="游戏"></option><option value="竞技"></option>
+                        <option value="灵异"></option><option value="同人"></option><option value="轻小说"></option>
+                        <option value="现实"></option><option value="军事"></option><option value="短篇"></option>
+                      </datalist>
+                    </div>
+                    <div>
+                      <label class="a-label">作者 · 笔名</label>
+                      <input type="text" class="a-input" data-field="author" value="${esc(data.author)}" placeholder="你的笔名" />
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <label>作者 / 笔名</label>
-                  <input type="text" data-field="author" value="${esc(data.author)}" placeholder="你的笔名" />
-                </div>
-              </div>
-              <div class="dt-form-row dt-form-row-3col">
-                <div>
-                  <label>🎯 目标总字数</label>
-                  <input type="number" data-field="target_words" value="${data.target_words || 0}" min="0" step="10000" />
-                  <div class="dt-hint">常见：短篇 3w / 中篇 30w / 长篇 100w+</div>
-                </div>
-                <div>
-                  <label>📖 总章节数</label>
-                  <input type="number" data-field="chapters_total" value="${data.chapters_total || 0}" min="0" step="10" />
-                  <div class="dt-hint">可编辑，每章约 3000-5000 字</div>
-                </div>
-                <div>
-                  <label>📕 总卷数</label>
-                  <input type="number" data-field="volumes_total" value="${data.volumes_total || 0}" min="0" step="1" />
-                  <div class="dt-hint">每卷约 30-80 章</div>
-                </div>
-              </div>
-              <div class="dt-form-row dt-form-row-3col dt-form-row-readonly">
-                <div>
-                  <label>已写字数</label>
-                  <input type="number" data-field="current_words" value="${data.current_words || 0}" min="0" step="1000" />
-                  <div class="dt-hint">当前进度（可手动同步）</div>
-                </div>
-                <div>
-                  <label>已写章节</label>
-                  <input type="number" data-field="chapters_done" value="${data.chapters_done || 0}" min="0" step="1" />
-                  <div class="dt-hint">写了几章就填几</div>
-                </div>
-                <div>
-                  <label>已写卷数</label>
-                  <input type="number" data-field="volumes_done" value="${data.volumes_done || 0}" min="0" step="1" />
-                  <div class="dt-hint">完成了几卷</div>
-                </div>
-              </div>
-              <div class="dt-form-row">
-                <label>作品状态</label>
-                <select data-field="status">
-                  <option value="draft" ${data.status === 'draft' ? 'selected' : ''}>📝 草稿（未公开）</option>
-                  <option value="ongoing" ${data.status === 'ongoing' ? 'selected' : ''}>🔥 连载中（稳定更新）</option>
-                  <option value="paused" ${data.status === 'paused' ? 'selected' : ''}>⏸ 暂停（暂时停更）</option>
-                  <option value="completed" ${data.status === 'completed' ? 'selected' : ''}>✅ 已完结（完本）</option>
-                </select>
+
+                <!-- 高级设置 · 折叠 -->
+                <details class="a-advanced">
+                  <summary>
+                    <span class="a-summary-icon">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                    </span>
+                    高级设置（字数 / 章节 / 卷数 / 状态 / 进度）
+                    <span class="a-summary-arrow">›</span>
+                  </summary>
+                  <div class="a-advanced-body">
+                    <div class="a-form-row a-form-row-3">
+                      <div>
+                        <label class="a-label a-label-muted">🎯 目标总字数</label>
+                        <input type="number" class="a-input" data-field="target_words" value="${data.target_words || 0}" min="0" step="10000" />
+                      </div>
+                      <div>
+                        <label class="a-label a-label-muted">📖 总章节数</label>
+                        <input type="number" class="a-input" data-field="chapters_total" value="${data.chapters_total || 0}" min="0" step="10" />
+                      </div>
+                      <div>
+                        <label class="a-label a-label-muted">📕 总卷数</label>
+                        <input type="number" class="a-input" data-field="volumes_total" value="${data.volumes_total || 0}" min="0" step="1" />
+                      </div>
+                    </div>
+                    <div class="a-form-row a-form-row-3">
+                      <div>
+                        <label class="a-label a-label-muted">已写字数</label>
+                        <input type="number" class="a-input" data-field="current_words" value="${data.current_words || 0}" min="0" step="1000" />
+                      </div>
+                      <div>
+                        <label class="a-label a-label-muted">已写章节</label>
+                        <input type="number" class="a-input" data-field="chapters_done" value="${data.chapters_done || 0}" min="0" step="1" />
+                      </div>
+                      <div>
+                        <label class="a-label a-label-muted">已写卷数</label>
+                        <input type="number" class="a-input" data-field="volumes_done" value="${data.volumes_done || 0}" min="0" step="1" />
+                      </div>
+                    </div>
+                    <div class="a-form-row">
+                      <label class="a-label a-label-muted">作品状态</label>
+                      <select class="a-input a-select" data-field="status">
+                        <option value="draft" ${data.status === 'draft' ? 'selected' : ''}>📝 草稿（未公开）</option>
+                        <option value="ongoing" ${data.status === 'ongoing' ? 'selected' : ''}>🔥 连载中（稳定更新）</option>
+                        <option value="paused" ${data.status === 'paused' ? 'selected' : ''}>⏸ 暂停（暂时停更）</option>
+                        <option value="completed" ${data.status === 'completed' ? 'selected' : ''}>✅ 已完结（完本）</option>
+                      </select>
+                    </div>
+                  </div>
+                </details>
               </div>
             </div>
           </div>`,
         submitText: isEdit ? '💾 保存修改' : '🚀 创建作品',
         onMount: (bodyEl) => {
-          // ------- 创建模式 Tab（仅新建） -------
-          let createMode = defaultCreateMode;
-          const tabsEl = bodyEl.querySelector('#dt-create-mode-tabs');
-          const dividerEl = bodyEl.querySelector('#dt-project-form-divider');
-          if (tabsEl) {
-            tabsEl.querySelectorAll('.dt-create-tab').forEach(btn => {
-              btn.addEventListener('click', () => {
-                tabsEl.querySelectorAll('.dt-create-tab').forEach(b => b.classList.remove('dt-create-tab--active'));
-                btn.classList.add('dt-create-tab--active');
-                createMode = btn.getAttribute('data-mode');
-                // 子面板显示
-                ['blank', 'genre', 'demo'].forEach(m => {
-                  const panel = bodyEl.querySelector(`#dt-create-panel-${m}`);
-                  if (panel) {
-                    if (m === createMode) panel.classList.remove('dt-create-panel--hidden');
-                    else panel.classList.add('dt-create-panel--hidden');
-                  }
-                });
-                // 从 demo 导入时，基础信息不可手动填（会被 ZIP 覆盖）
-                const disabled = createMode === 'demo';
-                bodyEl.querySelectorAll('.dt-form input, .dt-form select').forEach(el => {
-                  if (disabled) el.setAttribute('disabled', 'disabled');
-                  else el.removeAttribute('disabled');
-                });
-                // 选中类型时自动回填 genre 字段
-                if (createMode === 'genre') {
-                  const sel = bodyEl.querySelector('input[name="dt-genre"]:checked');
-                  if (sel) {
-                    const label = sel.value.split(':')[2] || '';
-                    const genreInput = bodyEl.querySelector('[data-field="genre"]');
-                    if (genreInput && !genreInput.value) genreInput.value = label;
-                  }
+          let createMode = 'blank';
+
+          // ------- Tab 切换 -------
+          const tabs = bodyEl.querySelectorAll('.a-tab');
+          function setActiveTab(mode) {
+            createMode = mode;
+            tabs.forEach(b => {
+              if (b.getAttribute('data-mode') === mode) b.classList.add('a-tab--active');
+              else b.classList.remove('a-tab--active');
+            });
+            ['blank', 'genre', 'demo'].forEach(m => {
+              const panel = bodyEl.querySelector(`#dt-create-panel-${m}`);
+              if (!panel) return;
+              if (m === mode) {
+                panel.classList.remove('a-panel--hidden');
+                // 触发动画
+                panel.style.opacity = '0';
+                requestAnimationFrame(() => { panel.style.opacity = ''; });
+              } else {
+                panel.classList.add('a-panel--hidden');
+              }
+            });
+          }
+          tabs.forEach(btn => {
+            btn.addEventListener('click', () => setActiveTab(btn.getAttribute('data-mode')));
+          });
+
+          // ------- 类型 / 示例 选中态同步 -------
+          function syncCardActive() {
+            bodyEl.querySelectorAll('.a-genre-card').forEach(c => {
+              const r = c.querySelector('input[type="radio"]');
+              if (r && r.checked) c.classList.add('a-card-active');
+              else c.classList.remove('a-card-active');
+            });
+            bodyEl.querySelectorAll('.a-demo-card').forEach(c => {
+              const r = c.querySelector('input[type="radio"]');
+              if (r && r.checked) c.classList.add('a-card-active');
+              else c.classList.remove('a-card-active');
+            });
+          }
+
+          const nameEl = bodyEl.querySelector('[data-field="name"]');
+          const subEl = bodyEl.querySelector('[data-field="subtitle"]');
+          const genreEl = bodyEl.querySelector('[data-field="genre"]');
+          const authorEl = bodyEl.querySelector('[data-field="author"]');
+
+          if (!isEdit) {
+            // 默认选中第一个类型（未选中状态，不填值，避免意外回填）
+            const firstGenre = bodyEl.querySelector('input[name="dt-genre"]');
+            const firstDemo = bodyEl.querySelector('input[name="dt-demo"]');
+            syncCardActive();
+
+            // 点击类型卡片：回填 genre + 名称（只在空时）
+            bodyEl.querySelectorAll('.a-genre-card').forEach(card => {
+              const r = card.querySelector('input[type="radio"]');
+              card.addEventListener('click', (e) => {
+                if (e.target !== r) r.checked = true;
+                syncCardActive();
+                if (r && r.checked) {
+                  const label = r.value.split(':')[2] || '';
+                  if (genreEl && !genreEl.value) genreEl.value = label;
+                  if (nameEl && !nameEl.value) nameEl.value = `【${label}】新建作品`;
+                  refreshCover();
                 }
               });
+              r && r.addEventListener('change', () => syncCardActive());
             });
 
-            // 选类型卡片时回填 genre
-            bodyEl.querySelectorAll('input[name="dt-genre"]').forEach(r => {
-              r.addEventListener('change', () => {
-                if (r.checked) {
-                  const label = r.value.split(':')[2] || '';
-                  const genreInput = bodyEl.querySelector('[data-field="genre"]');
-                  if (genreInput) genreInput.value = label;
-                  const nameInput = bodyEl.querySelector('[data-field="name"]');
-                  if (nameInput && !nameInput.value) nameInput.value = `【${label}】新建作品`;
+            // 点击示例卡片：回填 name/subtitle/genre/author（用户可覆盖）
+            bodyEl.querySelectorAll('.a-demo-card').forEach(card => {
+              const r = card.querySelector('input[type="radio"]');
+              card.addEventListener('click', (e) => {
+                if (e.target !== r) r.checked = true;
+                syncCardActive();
+                const key = card.getAttribute('data-demo-key');
+                const meta = DEMO_PROJECT_META[key];
+                if (meta) {
+                  if (nameEl && !nameEl.value) nameEl.value = meta.name || '';
+                  if (subEl && !subEl.value) subEl.value = meta.subtitle || '';
+                  if (genreEl && !genreEl.value) genreEl.value = meta.genre || '';
+                  if (authorEl && !authorEl.value) authorEl.value = meta.author || '';
+                  refreshCover();
                 }
               });
+              r && r.addEventListener('change', () => syncCardActive());
             });
-            // 默认选第一个类型
-            const firstGenre = bodyEl.querySelector('input[name="dt-genre"]');
-            if (firstGenre) firstGenre.checked = true;
-            // 默认选斗破苍穹示例
-            const firstDemo = bodyEl.querySelector('input[name="dt-demo"]');
-            if (firstDemo) firstDemo.checked = true;
           }
-          // ------- 封面预览（仅编辑/空白+genre 模式可见，demo 模式意义不大也保留） -------
-          const nameEl = bodyEl.querySelector('[data-field="name"]');
-          const genreEl = bodyEl.querySelector('[data-field="genre"]');
-          // 动态生成封面预览
-          const coverContainer = document.createElement('div');
-          coverContainer.className = 'dt-form-cover-wrap';
-          coverContainer.innerHTML = `
-            <div class="dt-form-cover-preview" id="dt-form-cover"></div>
-          `;
-          const formEl = bodyEl.querySelector('.dt-project-form');
-          if (formEl) formEl.insertBefore(coverContainer, (dividerEl || formEl.firstChild).nextSibling
-              || formEl.firstChild);
-          const coverEl = bodyEl.querySelector('#dt-form-cover');
+
+          // ------- 封面预览（3D 立体书脊） -------
+          const coverEl = bodyEl.querySelector('#dt-a-cover');
+          const coverInitial = bodyEl.querySelector('#dt-a-cover-initial');
+          const coverGenre = bodyEl.querySelector('#dt-a-cover-genre');
           function refreshCover() {
             if (!coverEl || !nameEl) return;
             const n = nameEl.value || '书';
             const g = genreEl ? genreEl.value : '';
             const cv = buildCover(n, g);
-            coverEl.setAttribute('style', `background: ${cv.grad};`);
-            coverEl.innerHTML = `<div class="dt-form-cover-initial">${esc(n.trim().charAt(0) || '书')}</div><div class="dt-form-cover-genre">${esc(g || '原创')}</div>`;
+            coverEl.style.background = cv.grad;
+            coverEl.style.setProperty('--cover-grad', cv.grad);
+            if (coverInitial) coverInitial.textContent = n.trim().charAt(0) || '书';
+            if (coverGenre) coverGenre.textContent = g || '原创';
           }
           if (nameEl) nameEl.addEventListener('input', refreshCover);
           if (genreEl) genreEl.addEventListener('input', refreshCover);
           refreshCover();
 
-          // 保存当前 createMode 到闭包供 onSubmit 读取
+          // 保存到 overlay 闭包供 onSubmit 读取
           overlay._getCreateMode = () => createMode;
           overlay._getSelectedGenre = () => {
             const r = bodyEl.querySelector('input[name="dt-genre"]:checked');
@@ -681,30 +761,90 @@
             if (!r) return null;
             return DEMO_PROJECTS.find(d => d.key === r.value) || null;
           };
+
+          // 在 Modal Footer 左侧插入「选中示例已回填」提示
+          const footer = overlay.querySelector('.dt-modal-footer');
+          if (footer && !isEdit) {
+            const tipEl = document.createElement('div');
+            tipEl.className = 'a-footer-tip';
+            tipEl.innerHTML = `<span class="a-dot"></span><span class="a-footer-text">表单可自由编辑；选中示例/类型后将自动填入默认信息</span>`;
+            footer.insertBefore(tipEl, footer.firstChild);
+          }
         },
         onSubmit: async (formEl) => {
           const isNew = !isEdit;
           const createMode = isNew && overlay._getCreateMode ? overlay._getCreateMode() : 'edit';
 
-          // ------- 模式 A: 从 ZIP 导入（类型模板 ZIP / Demo ZIP）-------
+          // 先采集表单值（所有模式下都优先用用户填写的数据）
+          const nameField = formEl.querySelector('[data-field="name"]');
+          const subField = formEl.querySelector('[data-field="subtitle"]');
+          const genreField = formEl.querySelector('[data-field="genre"]');
+          const authorField = formEl.querySelector('[data-field="author"]');
+
+          const name = nameField ? nameField.value.trim() : '';
+          const num = (sel) => {
+            const el = formEl.querySelector(sel);
+            return el ? Number(el.value) || 0 : 0;
+          };
+          const payload = {
+            id: isEdit ? data.id : genProjectId(),
+            name: name,
+            subtitle: subField ? subField.value.trim() : '',
+            genre: genreField ? genreField.value.trim() : '',
+            author: authorField ? authorField.value.trim() : '',
+            target_words: num('[data-field="target_words"]'),
+            chapters_total: num('[data-field="chapters_total"]'),
+            volumes_total: num('[data-field="volumes_total"]'),
+            current_words: num('[data-field="current_words"]'),
+            chapters_done: num('[data-field="chapters_done"]'),
+            volumes_done: num('[data-field="volumes_done"]'),
+            status: (() => {
+              const s = formEl.querySelector('[data-field="status"]');
+              return s ? s.value : (data.status || 'draft');
+            })(),
+            updated: new Date().toISOString(),
+            created_at: data.created_at || new Date().toISOString(),
+          };
+
+          // ------- 模式 A: 从 ZIP 导入（genre / demo）—— 用用户表单值覆盖导入后的元数据 -------
           if (isNew && (createMode === 'genre' || createMode === 'demo')) {
             let zipRelPath = null;
             if (createMode === 'genre') {
               const g = overlay._getSelectedGenre();
               if (!g) { DT().notify('请选择一个类型模板', 'warning'); return false; }
-              zipRelPath = `assets/genre-${g.code}-${g.slug}-vault.zip`;
+              zipRelPath = `static/assets/genre-${g.code}-${g.slug}-vault.zip`;
+              if (!payload.name) payload.name = `【${g.label}】新建作品`;
+              if (!payload.genre) payload.genre = g.label;
             } else {
               const d = overlay._getSelectedDemo();
               if (!d) { DT().notify('请选择一个示例项目', 'warning'); return false; }
               zipRelPath = d.zip;
+              const dm = DEMO_PROJECT_META[d.key];
+              if (!payload.name && dm) payload.name = dm.name;
+              if (!payload.genre && dm) payload.genre = dm.genre;
+              if (!payload.subtitle && dm) payload.subtitle = dm.subtitle;
+              if (!payload.author && dm) payload.author = dm.author;
+            }
+            if (!payload.name) {
+              DT().notify('作品名称不能为空', 'warning');
+              return false;
             }
             try {
               DT().notify(`正在下载并导入：${zipRelPath} …`, 'info');
               const blob = await fetchStaticZip(zipRelPath);
-              const newId = await DT().storage.importVault(blob);
+              const tempId = await DT().storage.importVault(blob);
+              const tempProj = await DT().storage.getProject(tempId);
+              const base = tempProj ? (tempProj.toJSON ? tempProj.toJSON() : tempProj) : {};
+              const merged = { ...base, ...payload, id: payload.id };
+              try {
+                await _cloneProject(tempId, payload.id, merged);
+                await DT().storage.deleteProject(tempId);
+              } catch (_) {
+                await DT().storage.saveProject({ ...merged, id: tempId });
+                payload.id = tempId;
+              }
               DT().notify('导入成功，正在加载…', 'success');
-              // 切换到导入的项目
-              if (typeof DT().switchProject === 'function') await DT().switchProject(newId);
+              if (typeof DT().switchProject === 'function') await DT().switchProject(payload.id);
               await loadAndRender();
               return true;
             } catch (err) {
@@ -714,48 +854,23 @@
             }
           }
 
-          // ------- 模式 B: 空白项目 / 编辑：走原逻辑，先创建 project.json 再把 blank ZIP 导入覆盖 -------
-          const name = formEl.querySelector('[data-field="name"]').value.trim();
-          if (!name) {
+          // ------- 模式 B: 空白项目 / 编辑 -------
+          if (!payload.name) {
             DT().notify('作品名称不能为空', 'warning');
             return false;
           }
-          const num = (sel) => Number(formEl.querySelector(sel).value) || 0;
-          const payload = {
-            id: isEdit ? data.id : genProjectId(),
-            name: name,
-            subtitle: formEl.querySelector('[data-field="subtitle"]').value.trim(),
-            genre: formEl.querySelector('[data-field="genre"]').value.trim(),
-            author: formEl.querySelector('[data-field="author"]').value.trim(),
-            target_words: num('[data-field="target_words"]'),
-            chapters_total: num('[data-field="chapters_total"]'),
-            volumes_total: num('[data-field="volumes_total"]'),
-            current_words: num('[data-field="current_words"]'),
-            chapters_done: num('[data-field="chapters_done"]'),
-            volumes_done: num('[data-field="volumes_done"]'),
-            status: formEl.querySelector('[data-field="status"]').value,
-            updated: new Date().toISOString(),
-            created_at: data.created_at || new Date().toISOString(),
-          };
           try {
             if (isNew) {
-              // 新建空白项目：导入 blank-vault.zip（含 07_类型模板/）作为基础骨架
               DT().notify('正在创建空白项目…', 'info');
-              const blob = await fetchStaticZip('assets/blank-vault.zip');
-              // 先导入（含 00_控制面/project.json，其 name 为默认「新建项目」），拿到临时 ID
+              const blob = await fetchStaticZip('static/assets/blank-vault.zip');
               const tempId = await DT().storage.importVault(blob);
-              // 再用用户填写的 payload 更新 project 元数据（保留用户自定义的名称、类型等）
               const tempProj = await DT().storage.getProject(tempId);
-              const merged = tempProj
-                ? { ...(tempProj.toJSON ? tempProj.toJSON() : tempProj), ...payload, id: payload.id }
-                : payload;
-              // 删除临时 ID 对应的 project + 其下所有数据，然后以 payload.id 重新写入
-              // 更简单的做法：把所有数据从 tempId 重写到 payload.id
+              const base = tempProj ? (tempProj.toJSON ? tempProj.toJSON() : tempProj) : {};
+              const merged = { ...base, ...payload, id: payload.id };
               try {
                 await _cloneProject(tempId, payload.id, merged);
                 await DT().storage.deleteProject(tempId);
               } catch (_) {
-                // 失败兜底：直接用 tempId，但更新名字
                 await DT().storage.saveProject({ ...merged, id: tempId });
                 payload.id = tempId;
               }
@@ -764,20 +879,16 @@
               await DT().storage.saveProject(payload);
               DT().notify('作品已更新', 'success');
             }
-            if (!isEdit || isEdit) {
-              const targetId = payload.id;
-              // 新建后自动设为当前作品
-              if (typeof DT().switchProject === 'function') {
-                await DT().switchProject(targetId);
-              } else {
-                try {
-                  const M = DT().modules && DT().modules.models;
-                  DT().state.currentProject = M ? new M.Project(payload) : payload;
-                } catch (e) { DT().state.currentProject = payload; }
-              }
+            const targetId = payload.id;
+            if (typeof DT().switchProject === 'function') {
+              await DT().switchProject(targetId);
+            } else {
+              try {
+                const M = DT().modules && DT().modules.models;
+                DT().state.currentProject = M ? new M.Project(payload) : payload;
+              } catch (e) { DT().state.currentProject = payload; }
             }
             if (isEdit) {
-              // 编辑：如果是当前项目，同步刷新内存对象
               const curId = typeof DT().state.currentProject === 'object' && DT().state.currentProject
                 ? DT().state.currentProject.id
                 : DT().state.currentProject;

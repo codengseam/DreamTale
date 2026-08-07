@@ -610,7 +610,7 @@
     });
   }
 
-  /** 创建并打开示例项目：默认从 assets/doupo-vault.zip（斗破苍穹）导入；若失败退回问剑长歌 seed */
+  /** 创建并打开示例项目：默认从 static/assets/doupo-vault.zip（斗破苍穹）导入；若失败退回问剑长歌 seed */
   function openDemo() {
     if (!state.storage) { notify('存储未就绪', 'warning'); return; }
 
@@ -621,7 +621,7 @@
 
     notify('正在加载斗破苍穹示例…', 'info');
     // 尝试加载斗破苍穹；失败则退回问剑长歌
-    var zips = [base + '/assets/doupo-vault.zip', base + '/assets/seed-vault.zip'];
+    var zips = [base + '/static/assets/doupo-vault.zip', base + '/static/assets/seed-vault.zip'];
     function tryLoad(idx) {
       return fetch(zips[idx]).then(function(r) {
         if (!r.ok) throw new Error('HTTP ' + r.status);
@@ -646,7 +646,7 @@
     tryLoad(0);
   }
 
-  /** 新建空白项目：从 assets/blank-vault.zip 导入（含 11 种网文类型模板库 + 标准目录骨架） */
+  /** 新建空白项目：从 static/assets/blank-vault.zip 导入（含 11 种网文类型模板库 + 标准目录骨架） */
   function newBlankProject() {
     if (!state.storage) { notify('存储未就绪', 'warning'); return; }
     var name = prompt('请输入项目名称：', '我的小说');
@@ -658,7 +658,7 @@
     }
 
     notify('正在创建空白项目…', 'info');
-    fetch(base + '/assets/blank-vault.zip').then(function(r) {
+    fetch(base + '/static/assets/blank-vault.zip').then(function(r) {
       if (!r.ok) throw new Error('HTTP ' + r.status + '（blank-vault.zip 未找到，请先运行 scripts/dreamtale/seed_to_vault.py）');
       return r.blob();
     }).then(function(blob) {
