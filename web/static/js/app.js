@@ -610,55 +610,128 @@
     });
   }
 
-  /** 创建并打开示例项目 */
+  /** 创建并打开示例项目：默认从 assets/doupo-vault.zip（斗破苍穹）导入；若失败退回问剑长歌 seed */
   function openDemo() {
-    if (!state.storage || !_modules) { notify('存储/模块未就绪', 'warning'); return; }
-    var Project = _modules.models.Project;
-    var now = new Date().toISOString();
-    var demo = new Project({
-      id: 'demo-' + Date.now(),
-      name: '示例项目：星河序曲',
-      subtitle: 'DreamTale 演示',
-      genre: '科幻',
-      author: 'DreamTale',
-      target_words: 100000,
-      status: 'draft',
-      created_at: now,
-      updated: now
-    });
-    state.storage.saveProject(demo).then(function () {
-      return refreshProjects();
-    }).then(function () {
-      return switchProject(demo.id);
-    }).then(function () {
-      router.navigate('#/chapters');
-    }).catch(function (err) {
-      notify('创建 Demo 失败：' + (err.message || err), 'error');
+    if (!state.storage) { notify('存储未就绪', 'warning'); return; }
+
+    var base = '';
+    if (state.options && state.options.baseUrl) {
+      base = String(state.options.baseUrl).replace(/\/$/, '');
+    }
+
+    notify('正在加载斗破苍穹示例…', 'info');
+    // 尝试加载斗破苍穹；失败则退回问剑长歌
+    var zips = [base + '/assets/doupo-vault.zip', base + '/assets/seed-vault.zip'];
+    function tryLoad(idx) {
+      return fetch(zips[idx]).then(function(r) {
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.blob();
+      }).then(function(blob) {
+        return state.storage.importVault(blob);
+      }).then(function(newId) {
+        return refreshProjects().then(function() {
+          return switchProject(newId);
+        });
+      }).then(function() {
+        router.navigate('#/chapters');
+        notify('示例项目加载完成', 'success');
+      }).catch(function(err) {
+        if (idx + 1 < zips.length) {
+          console.warn('[openDemo] 加载失败，尝试下一个 ZIP：', zips[idx], err);
+          return tryLoad(idx + 1);
+        }
+        notify('创建 Demo 失败：' + (err.message || err), 'error');
+      });
+    }
+    tryLoad(0);
+  }
+
+  /** 新建空白项目：从 assets/blank-vault.zip 导入（含 11 种网文类型模板库 + 标准目录骨架） */
+  function newBlankProject() {
+    if (!state.storage) { notify('存储未就绪', 'warning'); return; }
+    var name = prompt('请输入项目名称：', '我的小说');
+    if (!name) return;
+
+    var base = '';
+    if (state.options && state.options.baseUrl) {
+      base = String(state.options.baseUrl).replace(/\/$/, '');
+    }
+
+    notify('正在创建空白项目…', 'info');
+    fetch(base + '/assets/blank-vault.zip').then(function(r) {
+      if (!r.ok) throw new Error('HTTP ' + r.status + '（blank-vault.zip 未找到，请先运行 scripts/dreamtale/seed_to_vault.py）');
+      return r.blob();
+    }).then(function(blob) {
+      return state.storage.importVault(blob);
+    }).then(function(tempId) {
+      // 把 blank-project 的 Project 元数据改成用户填写的名字
+      return state.storage.getProject(tempId).then(function(proj) {
+        if (proj) {
+          var merged = Object.assign(
+            {},
+            proj.toJSON ? proj.toJSON() : proj,
+            {
+              id: 'proj-' + Date.now(),
+              name: name,
+              genre: '',
+              subtitle: '',
+              author: '',
+              updated: new Date().toISOString(),
+            }
+          );
+          // 克隆到新 ID
+          return cloneProjectData(tempId, merged.id, merged).then(function() {
+            return state.storage.deleteProject(tempId);
+          }).then(function() { return merged.id; });
+        }
+        return tempId;
+      });
+    }).then(function(newId) {
+      return refreshProjects().then(function() { return switchProject(newId); });
+    }).then(function() {
+      router.navigate('#/projects');
+      notify('空白项目已创建，建议从「世界观」开始动笔', 'success');
+    }).catch(function(err) {
+      console.error('[newBlankProject] 失败:', err);
+      notify('创建项目失败：' + (err.message || err), 'error');
     });
   }
 
-  /** 新建空白项目 */
-  function newBlankProject() {
-    if (!state.storage || !_modules) { notify('存储/模块未就绪', 'warning'); return; }
-    var name = prompt('请输入项目名称：', '我的小说');
-    if (!name) return;
-    var Project = _modules.models.Project;
-    var now = new Date().toISOString();
-    var proj = new Project({
-      id: 'proj-' + Date.now(),
-      name: name,
-      status: 'draft',
-      created_at: now,
-      updated: now
-    });
-    state.storage.saveProject(proj).then(function () {
-      return refreshProjects();
-    }).then(function () {
-      return switchProject(proj.id);
-    }).then(function () {
-      router.navigate('#/outline');
-    }).catch(function (err) {
-      notify('创建项目失败：' + (err.message || err), 'error');
+  /** 把 srcId 项目下所有数据克隆到 dstId（用于 blank 模板换 id） */
+  function cloneProjectData(srcId, dstId, mergedProject) {
+    var s = state.storage;
+    if (!s) return Promise.reject(new Error('storage 未就绪'));
+    return Promise.all([
+      s.listChapters(srcId),
+      s.listHooks(srcId),
+      s.listVolumes(srcId),
+      s.listCharacters(srcId),
+      s.listWorldSettings(srcId),
+      s.listEncyclopediaEntries(srcId),
+    ]).then(function(res) {
+      var chapters = res[0], hooks = res[1], volumes = res[2],
+          characters = res[3], settings = res[4], ency = res[5];
+      var p = Promise.resolve();
+      p = p.then(function() { return s.saveProject(mergedProject); });
+      chapters.forEach(function(c) { p = p.then(function() { return s.saveChapter(dstId, c); }); });
+      hooks.forEach(function(h)    { p = p.then(function() { return s.saveHook(dstId, h); }); });
+      volumes.forEach(function(v)  { p = p.then(function() { return s.saveVolume(dstId, v); }); });
+      if (typeof s.saveCharacters === 'function' && characters.length) {
+        p = p.then(function() { return s.saveCharacters(dstId, characters); });
+      } else {
+        characters.forEach(function(c) { p = p.then(function() { return s.saveCharacter(dstId, c); }); });
+      }
+      if (typeof s.saveWorldSettings === 'function' && settings.length) {
+        p = p.then(function() { return s.saveWorldSettings(dstId, settings); });
+      } else {
+        settings.forEach(function(w) { p = p.then(function() { return s.saveWorldSetting(dstId, w); }); });
+      }
+      if (typeof s.saveEncyclopediaEntries === 'function' && ency.length) {
+        p = p.then(function() { return s.saveEncyclopediaEntries(dstId, ency); });
+      } else {
+        ency.forEach(function(e) { p = p.then(function() { return s.saveEncyclopediaEntry(dstId, e); }); });
+      }
+      return p;
     });
   }
 

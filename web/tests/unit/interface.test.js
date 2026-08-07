@@ -67,14 +67,14 @@ describe('IStorageBackend 默认实现', () => {
     });
   }
 
-  it('共 21 个抽象方法（防止漏测新增方法）', () => {
-    // 统计 IStorageBackend 原型上的方法数量（含批量 saveCharacters / saveWorldSettings）
+  it('共 27 个原型方法（防止漏测新增方法）', () => {
+    // 统计 IStorageBackend 原型上的方法数量（含批量 saveXxxs、encyclopedia 相关）
     const proto = IStorageBackend.prototype;
     const methods = Object.getOwnPropertyNames(proto).filter(
       (n) => n !== 'constructor' && typeof proto[n] === 'function'
     );
     // name 是 getter（在实例上），不计入原型方法
-    expect(methods.length).toBe(21);
+    expect(methods.length).toBe(27);
   });
 });
 
