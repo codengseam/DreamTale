@@ -144,9 +144,28 @@ export function chapterToMarkdown(chapter, project = null) {
   return lines.join('\n');
 }
 
-/** 从 md 解析回 Chapter 对象 */
-export function chapterFromMarkdown(md) {
+/** 从 md 解析回 Chapter 对象。
+ *  pathHint：可选的文件路径（如 "05_正文/drafts/vol_01/ch_004_云岚宗.md"），
+ *  frontmatter 缺少 vol_no/ch_no 时从路径兜底解析，避免出现 "undefined" 章号。
+ */
+export function chapterFromMarkdown(md, pathHint) {
   const { frontmatter, body } = parseFrontmatter(md);
+  // 兼容别名键（volume: vol_01 / chapter: ch_001 等历史格式）
+  const normId = (v) => {
+    if (v == null) return undefined;
+    const m = String(v).match(/(\d+)/);
+    return m ? m[1] : undefined;
+  };
+  let vol_no = frontmatter.vol_no != null ? frontmatter.vol_no : normId(frontmatter.volume);
+  let ch_no = frontmatter.ch_no != null ? frontmatter.ch_no : normId(frontmatter.chapter);
+  // 路径兜底：/vol_NN/ 与 ch_NN 文件名
+  if ((vol_no == null || ch_no == null) && pathHint) {
+    const vm = pathHint.match(/vol[_ ]?(\d+)/i);
+    const cm = pathHint.match(/ch[_ ]?(\d+)/i);
+    if (vol_no == null && vm) vol_no = vm[1];
+    if (ch_no == null && cm) ch_no = cm[1];
+  }
+
   // 提取标题（# 第 N 章 · 标题）
   let title = frontmatter.title || '';
   const titleMatch = body.match(/^#\s+第\s*\d+\s*章\s*[·•]?\s*(.*)$/m);
@@ -180,8 +199,8 @@ export function chapterFromMarkdown(md) {
   content = content.trim();
 
   return new Chapter({
-    vol_no: frontmatter.vol_no,
-    ch_no: frontmatter.ch_no,
+    vol_no,
+    ch_no,
     title,
     content,
     summary,

@@ -1113,3 +1113,29 @@
   2. 用了带多参数和嵌套函数的 CSS（`radial-gradient` + `color-mix` + 位置/大小简写）后，必须在写的时候数括号——「开一个就立刻写一个关闭的」，不要等逻辑写完再补。
   3. 可复用的资产：以后新增 CSS 规则后，可在 CI 加一个极小的 smoke test：把 CSS 文本塞进临时 `<style>`，用 `sheet.cssRules.length` 与基线对比，异常就 fail，防止类似问题再次流入主分支。
   4. CSS Grid 布局错乱时，先检查每个子项的 `grid-area` 是否都匹配父容器的 `grid-template-areas`：只要有一个子项的 `grid-area` 是 `auto`，它就会按 DOM 顺序自动排，布局就完全乱了。
+
+---
+
+## ZIP 导入章节出现「第 undefined 章」（frontmatter 键名不兼容 + 无路径兜底）
+
+- **编号**：BUG-052
+- **首次出现**：2026-08-24
+- **类型**：数据 / 导入解析
+- **现象**：打开斗破苍穹 Demo 项目后，章节列表出现「第 undefined 章 · 未命名」条目。同一 ZIP 内同名章节存在双份文件（`ch_001.md` 与 `ch_001_陨落的天才.md`），导入后列表条目数也不对。
+- **根因**（三层叠加）：
+  1. 斗破 demo ZIP 的 `ch_001_陨落的天才.md` frontmatter 用的是别名键 `chapter: ch_001` / `volume: vol_01`，而 `chapterFromMarkdown` 只认 `ch_no` / `vol_no`；裸文件 `ch_001.md` 则完全没有 frontmatter。
+  2. `chapterFromMarkdown(md)` 不接收文件路径，无法从 `05_正文/drafts/vol_01/ch_001_xxx.md` 文件名兜底解析卷章号。
+  3. `Chapter` 构造器把缺失的 `ch_no` 规范化为字符串 `"undefined"`（`vol_no` 为 `"00"`），错误被"固化"进数据层，UI 直接显示「第 undefined 章」。
+- **修复**：
+  1. `web/src/core/markdown.js`：`chapterFromMarkdown` 新增可选参数 `pathHint`，frontmatter 缺 `vol_no`/`ch_no` 时从路径 `vol_NN` / `ch_NN` 兜底解析；同时兼容 `volume` / `chapter` 别名键（正则提取数字）。
+  2. `web/src/storage/zip-utils.js`：导入时传入 `entry.path`；导入完成后按 `vol_no:ch_no` 去重（同一章双文件保留信息更全的一份，评分 = 有标题 +10 / 正文长度），无法解析章号的条目（`ch_no === "undefined"`）不参与去重原样保留；结果按卷/章号排序。
+  3. `web/src/storage/fsaccess-backend.js`：`listChapters` 同步传入 `${sub}/${volDir.name}/${f.name}` 路径。
+- **涉及文件**：`web/src/core/markdown.js`、`web/src/storage/zip-utils.js`、`web/src/storage/fsaccess-backend.js`
+- **回归测试**：
+  - `web/tests/unit/markdown.test.js` 新增 describe「chapterFromMarkdown 卷章号兜底解析」4 个断言：路径兜底、别名键兼容、frontmatter 优先于路径、无信息时不抛错。
+  - `web/tests/unit/zip-utils.test.js` 新增 describe「importVaultFromZip 去重与路径兜底」3 个断言：同章双文件去重保留带标题份、无 frontmatter 章节路径兜底、导入结果排序。
+  - 浏览器实测：清空 IndexedDB → 重新导入 Demo → 斗破 5 章全部显示 001-005 章号，页面全文无 "undefined" 字样。
+- **教训**：
+  1. 解析函数要充分利用调用方已持有的上下文（文件路径），不要只啃内容本身——路径里的 `vol_NN/ch_NN` 是最可靠的定位信息。
+  2. 模型构造器把 `undefined` 规范化为 `"undefined"` 字符串是"错误固化"：错误应在解析层拦截或兜底，而不是转成字符串存进数据层静默扩散。
+  3. Demo 数据打包时的文件命名（带标题后缀的双份章节文件）与导入器的解析约定没有对齐——资产格式和解析器要一起改、一起测。

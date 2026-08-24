@@ -146,6 +146,38 @@ describe('chapterToMarkdown / chapterFromMarkdown 往返', () => {
   });
 });
 
+// ---------- chapterFromMarkdown 卷章号兜底解析（回归：斗破 demo 导入出现"第 undefined 章"） ----------
+
+describe('chapterFromMarkdown 卷章号兜底解析', () => {
+  it('frontmatter 缺失 vol_no/ch_no 时从路径兜底解析', () => {
+    const md = '斗之力，三段！\n\n少年面无表情。';
+    const c = chapterFromMarkdown(md, '05_正文/drafts/vol_01/ch_001_陨落的天才.md');
+    expect(c.vol_no).toBe('01');
+    expect(c.ch_no).toBe('001');
+  });
+
+  it('兼容别名键 volume/chapter（如 volume: vol_01 / chapter: ch_002）', () => {
+    const md = '---\ntitle: "第2章"\nchapter: ch_002\nvolume: vol_01\n---\n\n# 第 2 章 · 斗气大陆\n\n正文。';
+    const c = chapterFromMarkdown(md);
+    expect(c.vol_no).toBe('01');
+    expect(c.ch_no).toBe('002');
+  });
+
+  it('frontmatter 中的 vol_no/ch_no 优先于路径', () => {
+    const md = '---\nvol_no: "02"\nch_no: "040"\ntitle: "寒江尽头"\n---\n\n# 第 40 章 · 寒江尽头\n\n正文。';
+    const c = chapterFromMarkdown(md, '05_正文/published/vol_02/ch_040.md');
+    expect(c.vol_no).toBe('02');
+    expect(c.ch_no).toBe('040');
+  });
+
+  it('无路径且无 frontmatter 时不抛错（由 Chapter 模型规范化兜底）', () => {
+    const c = chapterFromMarkdown('纯正文，无任何元信息。');
+    expect(c).toBeInstanceOf(Chapter);
+    // Chapter 构造器将缺失 ch_no 规范化为字符串 "undefined"（导入层负责路径兜底）
+    expect(String(c.ch_no)).toBe('undefined');
+  });
+});
+
 // ---------- 章纲 Markdown ----------
 
 describe('outlineToMarkdown / outlineFromMarkdown 往返', () => {

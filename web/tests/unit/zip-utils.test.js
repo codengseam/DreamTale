@@ -102,6 +102,58 @@ describe('buildZip / parseZip 往返', () => {
 
 // ---------- exportVaultToZip / importVaultFromZip ----------
 
+// ---------- 导入去重与路径兜底（回归：斗破 demo 同章双文件 / 无 frontmatter 章节导入出 undefined） ----------
+
+describe('importVaultFromZip 去重与路径兜底', () => {
+  /** 手工构造一个含重复章节文件的 ZIP */
+  async function buildDupZip() {
+    const files = [
+      {
+        path: 'manifest.json',
+        data: new TextEncoder().encode(JSON.stringify({
+          version: '1.0.0',
+          files: [
+            { path: '05_正文/drafts/vol_01/ch_001.md', type: 'chapter', status: 'draft' },
+            { path: '05_正文/drafts/vol_01/ch_001_陨落的天才.md', type: 'chapter', status: 'draft' },
+            { path: '05_正文/drafts/vol_01/ch_002.md', type: 'chapter', status: 'draft' },
+          ],
+        })),
+      },
+      // 裸文件：无 frontmatter，仅正文
+      { path: '05_正文/drafts/vol_01/ch_001.md', data: new TextEncoder().encode('斗之力，三段！'.repeat(50)) },
+      // 带 frontmatter + 标题的同章文件（信息更全，应胜出）
+      {
+        path: '05_正文/drafts/vol_01/ch_001_陨落的天才.md',
+        data: new TextEncoder().encode('---\ntitle: "陨落的天才"\n---\n\n# 第 1 章 · 陨落的天才\n\n正文摘要。'),
+      },
+      { path: '05_正文/drafts/vol_01/ch_002.md', data: new TextEncoder().encode('第二章正文。') },
+    ];
+    return new Blob([buildZip(files)], { type: 'application/zip' });
+  }
+
+  it('同章双文件去重：保留带标题的一份', async () => {
+    const imported = await importVaultFromZip(await buildDupZip());
+    expect(imported.chapters.length).toBe(2);
+    const ch1 = imported.chapters.find((c) => c.ch_no === '001');
+    expect(ch1).toBeDefined();
+    expect(ch1.title).toBe('陨落的天才');
+    expect(ch1.vol_no).toBe('01');
+  });
+
+  it('无 frontmatter 章节从路径兜底解析出卷章号', async () => {
+    const imported = await importVaultFromZip(await buildDupZip());
+    const ch2 = imported.chapters.find((c) => c.ch_no === '002');
+    expect(ch2).toBeDefined();
+    expect(ch2.vol_no).toBe('01');
+  });
+
+  it('导入结果按卷号/章号排序', async () => {
+    const imported = await importVaultFromZip(await buildDupZip());
+    const keys = imported.chapters.map((c) => c.vol_no + ':' + c.ch_no);
+    expect(keys).toEqual([...keys].sort());
+  });
+});
+
 describe('exportVaultToZip / importVaultFromZip 往返', () => {
   const sampleData = () => ({
     project: new Project({
