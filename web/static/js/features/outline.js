@@ -2830,4 +2830,11 @@ Ch018-020  卷末大爽点：逆袭（大）+ 打脸（卷级反派）+ 揭秘�
   // ---------- 导出 ----------
 
   NS.renderOutline = renderOutline;
+  // 暴露章纲解析工具，供写作工作站等模块复用（单一数据源，避免 summary 格式解析逻辑漂移）
+  NS.outlineUtils = {
+    isOutlineSummary,
+    parseOutlineFromSummary,
+    serializeOutlineToSummary,
+    emptyOutline,
+  };
 })(window);
