@@ -194,7 +194,7 @@ export class FSAccessBackend extends IStorageBackend {
           if (f.kind !== 'file' || !f.name.endsWith('.md')) continue;
           const file = await f.getFile();
           const text = await file.text();
-          chapters.push(chapterFromMarkdown(text));
+          chapters.push(chapterFromMarkdown(text, `${sub}/${volDir.name}/${f.name}`));
         }
       }
     }

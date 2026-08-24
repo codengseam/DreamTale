@@ -349,7 +349,7 @@ export async function importVaultFromZip(blob) {
         volumes.push(Volume.fromJSON(JSON.parse(text)));
         break;
       case 'chapter':
-        chapters.push(chapterFromMarkdown(text));
+        chapters.push(chapterFromMarkdown(text, entry.path));
         break;
       case 'hooks': {
         const registry = JSON.parse(text);
@@ -372,7 +372,28 @@ export async function importVaultFromZip(blob) {
     if (fallback) project = Project.fromJSON(JSON.parse(utf8Decode(fallback.data)));
   }
 
-  return { project, chapters, hooks, volumes, characters, worldSettings };
+  // 章节去重：同一 vol_no:ch_no 可能存在多个文件（如 ch_001.md 与 ch_001_标题.md），
+  // 保留信息更全（有标题/正文更长）的那份。
+  // 注意 Chapter 构造器会把缺失的 ch_no 规范化为字符串 "undefined"（vol_no 为 "00"），
+  // 此类无法定位的条目不参与去重，原样保留。
+  const isUnparsable = (c) =>
+    c.ch_no == null || c.ch_no === '' || String(c.ch_no) === 'undefined';
+  const byKey = new Map();
+  const unparsable = [];
+  for (const ch of chapters) {
+    if (isUnparsable(ch)) { unparsable.push(ch); continue; }
+    const key = ch.vol_no + ':' + ch.ch_no;
+    const prev = byKey.get(key);
+    if (!prev) { byKey.set(key, ch); continue; }
+    const score = (c) => ((c.title ? 10 : 0) + (c.content ? c.content.length / 1000 : 0));
+    if (score(ch) > score(prev)) byKey.set(key, ch);
+  }
+  const deduped = [...byKey.values()];
+  deduped.push(...unparsable);
+  deduped.sort((a, b) =>
+    String(a.vol_no).localeCompare(String(b.vol_no)) || String(a.ch_no).localeCompare(String(b.ch_no)));
+
+  return { project, chapters: deduped, hooks, volumes, characters, worldSettings };
 }
 
 // 角色 / 世界设定 Markdown 序列化函数已迁移至 core/markdown.js：

@@ -34,6 +34,7 @@
 
   // ==================== 默认视图配置 ====================
   const DEFAULT_CONFIG = {
+    showOutlinePanel: true,   // 左栏底部「本章章纲」面板
     showRoles: true,
     showSettings: true,
     showHooks: true,
@@ -129,13 +130,30 @@
     // ---------- 渲染三栏骨架 ----------
     container.innerHTML = `
       <div class="ws-shell" id="ws-shell" data-theme="${DT().state.theme || 'light'}">
-        <!-- 左栏：大纲/章节列表 -->
+        <!-- 左栏：大纲/章节列表 + 本章章纲面板 -->
         <aside class="ws-left" id="ws-left">
           <div class="ws-left-toolbar">
-            <button class="ws-btn ws-btn-primary ws-btn-sm" data-act="new-ch">+ 新章</button>
-            <button class="ws-btn ws-btn-sm" data-act="refresh" title="刷新">⟳</button>
+            <div class="ws-left-toolbar-title">章节目录</div>
+            <div class="ws-left-toolbar-actions">
+              <button class="ws-btn ws-btn-primary ws-btn-sm" data-act="new-ch">+ 新章</button>
+              <button class="ws-btn ws-btn-ghost ws-btn-sm ws-btn-icon-only" data-act="refresh" title="刷新列表">⟳</button>
+            </div>
           </div>
           <div class="ws-chapter-list" id="ws-chapter-list"><p class="dt-empty-hint">加载中…</p></div>
+          <div class="ws-outline-panel" id="ws-outline-panel">
+            <div class="ws-outline-head">
+              <span class="ws-outline-head-icon">📋</span>
+              <div class="ws-outline-head-main">
+                <span class="ws-outline-head-title">本章章纲</span>
+                <span class="ws-outline-head-ch" id="ws-outline-ch-label">未选择章节</span>
+              </div>
+              <button class="ws-outline-expand" data-act="expand-outline" title="查看完整章纲">⤢</button>
+              <button class="ws-outline-toggle" data-act="toggle-outline-panel" title="折叠/展开">▾</button>
+            </div>
+            <div class="ws-outline-body" id="ws-outline-body">
+              <p class="ws-empty">从上方选择章节后，这里会展示该章的章纲</p>
+            </div>
+          </div>
         </aside>
         <!-- 中栏：编辑器 + 顶/底栏 -->
         <section class="ws-center">
@@ -242,6 +260,9 @@
     const aiFloat = container.querySelector('#ws-ai-float');
     const atPopover = container.querySelector('#ws-at-popover');
     const atList = container.querySelector('#ws-at-list');
+    const outlinePanel = container.querySelector('#ws-outline-panel');
+    const outlineBody = container.querySelector('#ws-outline-body');
+    const outlineChLabel = container.querySelector('#ws-outline-ch-label');
 
     state.atPopoverEl = atPopover;
 
@@ -288,8 +309,139 @@
       panelHooks.style.display = c.showHooks ? '' : 'none';
       panelEncyclopedia.style.display = c.showEncyclopedia ? '' : 'none';
       searchWrap.style.display = c.showSearch ? '' : 'none';
+      outlinePanel.style.display = c.showOutlinePanel ? '' : 'none';
       container.querySelector('#ws-bottom-bar').style.display = c.showWritingGoal ? '' : 'none';
       aiFloat.style.display = c.showAIToolbar ? '' : 'none';
+    }
+
+    // ---------- 章纲工具（复用 outline.js 的解析逻辑，单一数据源） ----------
+    const OUTLINE_MARK = '/*DT-OUTLINE*/';
+    function parseOutline(c) {
+      if (!c || typeof c.summary !== 'string' || !c.summary.startsWith(OUTLINE_MARK)) return null;
+      if (NS.outlineUtils) return NS.outlineUtils.parseOutlineFromSummary(c.summary);
+      try { return JSON.parse(c.summary.slice(OUTLINE_MARK.length)); } catch (_) { return null; }
+    }
+
+    /** 把章纲对象渲染为结构化 HTML（左栏面板与章纲浮层共用） */
+    function outlineDetailHTML(o) {
+      const sec = (title, icon, inner) => (inner && inner.replace(/\s/g, ''))
+        ? `<div class="ws-ol-section"><div class="ws-ol-section-title"><span class="ws-ol-sec-icon">${icon}</span>${title}</div>${inner}</div>`
+        : '';
+
+      // 元信息徽标
+      const metas = [];
+      if (o.chapter_type) metas.push(`<span class="ws-ol-meta">${esc(o.chapter_type)}</span>`);
+      if (o.qicige_loc) metas.push(`<span class="ws-ol-meta">${esc(o.qicige_loc)}</span>`);
+      if (o.pov) metas.push(`<span class="ws-ol-meta">视点：${esc(o.pov)}</span>`);
+      if (o.word_target) metas.push(`<span class="ws-ol-meta">目标 ${esc(o.word_target)} 字</span>`);
+      const metaHTML = metas.length ? `<div class="ws-ol-metas">${metas.join('')}</div>` : '';
+
+      // 起承转合四段
+      const q = o.qicige || {};
+      const qDefs = [['qi', '起 · 铺垫'], ['cheng', '承 · 推进'], ['zhuan', '转 · 高潮'], ['he', '合 · 钩子']];
+      const qHTML = qDefs.map(([k, label]) => {
+        const seg = q[k];
+        if (!seg || (!seg.summary && !seg.detail)) return '';
+        return `
+          <div class="ws-ol-qseg">
+            <div class="ws-ol-qseg-head"><span class="ws-ol-qseg-name">${label}</span><span class="ws-ol-qseg-pct">${esc(seg.pct || '')}</span></div>
+            ${seg.summary ? `<div class="ws-ol-qseg-sum">${esc(seg.summary)}</div>` : ''}
+            ${seg.detail ? `<div class="ws-ol-qseg-detail">${esc(seg.detail)}</div>` : ''}
+          </div>`;
+      }).join('');
+
+      // 爽点设计
+      const cl = o.climax || {};
+      const formula = cl.formula || {};
+      const formulaRows = [['flag', '① 立Flag'], ['crowd', '② 群众反应'], ['moment', '③ 出手画面'], ['ending', '④ 收尾']]
+        .map(([k, l]) => formula[k] ? `<div class="ws-ol-fml"><span class="ws-ol-fml-k">${l}</span><span class="ws-ol-fml-v">${esc(formula[k])}</span></div>` : '').join('');
+      const climaxHTML = (cl.type || formulaRows) ? `
+        ${cl.type ? `<div class="ws-ol-climax-line"><span class="ws-ol-climax-type">${esc(cl.type)}</span>${cl.strength ? `<span class="ws-ol-stars" title="强度 ${esc(cl.strength)}/10">${'★'.repeat(Math.max(1, Math.min(10, cl.strength)))}</span></div>` : '</div>'}` : ''}
+        ${formulaRows ? `<div class="ws-ol-fmls">${formulaRows}</div>` : ''}` : '';
+
+      // 章末钩子
+      const hk = o.chapter_hook || {};
+      const hookHTML = (hk.content || hk.type || hk.cuttip) ? `
+        ${hk.type ? `<span class="ws-ol-hook-type">${esc(hk.type)}</span>` : ''}
+        ${hk.content ? `<div class="ws-ol-hook-content">${esc(hk.content)}</div>` : ''}
+        ${hk.cuttip ? `<div class="ws-ol-hook-tip">断点提示：${esc(hk.cuttip)}</div>` : ''}` : '';
+
+      // 场景列表
+      const scenesHTML = (o.scenes || []).map((s, i) => {
+        const chars = Array.isArray(s.characters) ? s.characters.join('、') : (s.characters || '');
+        return `
+          <div class="ws-ol-scene">
+            <div class="ws-ol-scene-head">
+              <span class="ws-ol-scene-no">场景 ${i + 1}</span>
+              ${s.location ? `<span class="ws-ol-scene-tag">📍${esc(s.location)}</span>` : ''}
+              ${s.time ? `<span class="ws-ol-scene-tag">🕐${esc(s.time)}</span>` : ''}
+            </div>
+            ${s.event ? `<div class="ws-ol-scene-event">${esc(s.event)}</div>` : ''}
+            ${chars ? `<div class="ws-ol-scene-sub">👥 ${esc(chars)}</div>` : ''}
+            ${s.purpose ? `<div class="ws-ol-scene-sub">🎯 目的：${esc(s.purpose)}</div>` : ''}
+          </div>`;
+      }).join('');
+
+      // 出场角色
+      const charsHTML = (o.characters || []).map((ch) => `
+        <div class="ws-ol-char">
+          <span class="ws-ol-char-name">${esc(ch.name || '')}</span>
+          ${ch.role ? `<span class="ws-ol-char-role">${esc(ch.role)}</span>` : ''}
+          ${ch.effect_in_chapter ? `<span class="ws-ol-char-eff">${esc(ch.effect_in_chapter)}</span>` : ''}
+        </div>`).join('');
+
+      // 伏笔操作
+      const fh = (list, mark, label, cls) => (list || []).map((h) =>
+        `<span class="ws-ol-fhook ${cls}">${mark} ${label} ${esc(h.hook_id || '')}${h.description ? ' · ' + esc(h.description) : ''}</span>`).join('');
+      const hooksHTML = [
+        fh(o.hook_planted, '🟢', '埋设', 'ws-ol-fhook-plant'),
+        fh(o.hook_hinted, '🟡', '提示', 'ws-ol-fhook-hint'),
+        fh(o.hook_resolved, '🔴', '回收', 'ws-ol-fhook-resolve'),
+      ].filter(Boolean).join('');
+
+      // 节奏
+      const rh = o.rhythm || {};
+      const rhythmHTML = (rh.satisfaction || rh.suppression || rh.golden_quote) ? `
+        ${(rh.satisfaction || rh.suppression) ? `<div class="ws-ol-rhythm">
+          ${rh.satisfaction ? `<span>爽点 ${'★'.repeat(Math.max(1, Math.min(5, rh.satisfaction)))}</span>` : ''}
+          ${rh.suppression ? `<span>压抑 ${'▼'.repeat(Math.max(1, Math.min(5, rh.suppression)))}</span>` : ''}
+        </div>` : ''}
+        ${rh.golden_quote ? `<blockquote class="ws-ol-quote">${esc(rh.golden_quote)}</blockquote>` : ''}` : '';
+
+      return metaHTML
+        + sec('核心冲突', '⚡', o.core_conflict ? `<div class="ws-ol-conflict">${esc(o.core_conflict)}</div>` : '')
+        + sec('起承转合', '🧭', qHTML ? `<div class="ws-ol-qicige">${qHTML}</div>` : '')
+        + sec('爽点设计', '🔥', climaxHTML)
+        + sec('章末钩子', '🪝', hookHTML)
+        + sec('场景列表', '🎬', scenesHTML)
+        + sec('出场角色', '👥', charsHTML)
+        + sec('伏笔操作', '🪢', hooksHTML)
+        + sec('节奏', '📈', rhythmHTML);
+    }
+
+    // ---------- 左栏「本章章纲」面板 ----------
+    function renderOutlinePanel() {
+      if (!state.config.showOutlinePanel) { outlinePanel.style.display = 'none'; return; }
+      outlinePanel.style.display = '';
+      if (!state.currentCh) {
+        outlineChLabel.textContent = '未选择章节';
+        outlineBody.innerHTML = '<p class="ws-empty">从上方选择章节后，这里会展示该章的章纲</p>';
+        return;
+      }
+      outlineChLabel.textContent = `第${state.currentCh.vol_no}卷 第${state.currentCh.ch_no}章 · ${state.currentCh.title || '未命名'}`;
+      const o = parseOutline(state.currentCh);
+      if (!o) {
+        outlineBody.innerHTML = `
+          <div class="ws-ol-empty">
+            <p>本章尚未编写章纲</p>
+            <button class="ws-btn ws-btn-ghost ws-btn-xs" data-act="go-outline">✏️ 去编写章纲</button>
+          </div>`;
+        outlineBody.querySelector('[data-act="go-outline"]').addEventListener('click', () => {
+          DT().router.navigate('#/outline');
+        });
+        return;
+      }
+      outlineBody.innerHTML = `<div class="ws-ol-detail">${outlineDetailHTML(o)}</div>`;
     }
 
     // ---------- 加载章节 & 卷 ----------
@@ -306,6 +458,7 @@
         state.allHooks = state.allHooks || [];
         state.volumes = (state.volumes || []).sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
         renderList();
+        renderOutlinePanel();
         // 章节/百科/伏笔加载完成后重扫右侧
         scanAndUpdateSidebar(true);
       } catch (err) {
@@ -361,21 +514,16 @@
     }
 
     function chItemHTML(c, active) {
-      const words = (c.words || 0) > 0 ? `<span class="ws-badge ws-badge-outline" title="字数">${c.words}</span>` : '';
-      const statusBadge = c.status === 'published'
-        ? '<span class="ws-badge ws-badge-pub">已发</span>'
-        : c.status === 'todo' ? '<span class="ws-badge ws-badge-draft">待写</span>'
-        : '<span class="ws-badge ws-badge-draft">草</span>';
-      const hasOutline = Math.random() > 0.5; // 真实时按章纲文件存在判断
-      const outlineBadge = hasOutline ? '<span class="ws-badge ws-badge-outline" title="已编写章纲">📋</span>' : '';
+      const words = (c.words || 0) > 0 ? `<span class="ws-badge ws-badge-words" title="字数">${c.words}</span>` : '';
+      // 章纲徽标：按 chapter.summary 中的真实章纲数据判断（不再用随机 mock）
+      const outlineBadge = parseOutline(c) ? '<span class="ws-badge ws-badge-ol" title="已编写章纲">📋</span>' : '';
       return `
         <li class="ws-ch-item ${active ? 'ws-ch-item-active' : ''}" data-key="${esc(chKey(c))}" draggable="true">
           <span class="ws-ch-no">${esc(c.ch_no)}</span>
           <span class="ws-ch-title" title="${esc(c.title || '未命名')}">${esc(c.title || '未命名')}</span>
-          <button class="ws-ch-outline-btn" data-act="view-outline" title="查看章纲">🔖</button>
           ${outlineBadge}
           ${words}
-          ${statusBadge}
+          <button class="ws-ch-outline-btn" data-act="view-outline" title="查看章纲">🔖</button>
         </li>`;
     }
 
@@ -436,11 +584,18 @@
       }
     }
 
-    // ---------- 章纲浮层 ----------
+    // ---------- 章纲浮层（真实章纲数据，每章各不相同） ----------
     function showOutlineModal(key) {
       const c = state.chapters.find((x) => chKey(x) === key);
       if (!c) return;
-      const mockOutline = `# 第 ${c.ch_no} 章 · ${c.title || '未命名'}\n\n## 核心目标\n- 推进主角与反派的首次正面交锋\n- 揭示残剑新的剑纹能力\n\n## 场景 1：密室相遇\n- 开场：主角追踪气息进入密室\n- 对话：与反派影杀简短对峙\n- 冲突：影杀放出暗器，主角以剑格挡\n\n## 场景 2：残剑共鸣\n- 金手指升级：残剑剑纹亮起，主角感知剑骨方位\n- 情绪转折：主角从防御转进攻\n\n## 结尾钩子\n- 影沙逃走时留下线索，指向东海渊海`;
+      const o = parseOutline(c);
+      const bodyHTML = o
+        ? `<div class="ws-ol-detail ws-ol-detail-modal">${outlineDetailHTML(o)}</div>`
+        : `<div class="ws-ol-empty">
+            <p>该章节还没有编写章纲</p>
+            <p class="ws-ol-empty-hint">可前往「大纲 → 章纲」填写十五段模板<br/>（起承转合 / 爽点 / 章末钩子 / 场景 / 伏笔）</p>
+            <button class="ws-btn ws-btn-primary ws-btn-sm" data-act="go-outline">✏️ 前往编写章纲</button>
+          </div>`;
       const modal = document.createElement('div');
       modal.className = 'dt-modal-overlay';
       modal.innerHTML = `
@@ -448,18 +603,22 @@
           <div class="dt-modal-header"><h3>📋 第 ${esc(c.ch_no)} 章 · ${esc(c.title || '未命名')} 章纲</h3>
             <button class="dt-modal-close" data-act="close">×</button>
           </div>
-          <div class="dt-modal-body" style="max-height:60vh;overflow:auto;"><pre style="white-space:pre-wrap;font-family:var(--ws-font-serif);line-height:1.8;padding:12px;">${esc(mockOutline)}</pre></div>
+          <div class="dt-modal-body ws-outline-modal-body">${bodyHTML}</div>
           <div class="dt-modal-footer">
             <button class="dt-btn" data-act="close">关闭</button>
-            <button class="dt-btn dt-btn-primary" data-act="use">作为写作参考</button>
+            ${o ? '<button class="dt-btn dt-btn-primary" data-act="use">作为写作参考</button>' : ''}
           </div>
         </div>`;
-      document.body.appendChild(modal);
+      // 挂到 shell 内以继承 --ws-* 主题变量
+      shell.appendChild(modal);
       const close = () => modal.remove();
       modal.querySelectorAll('[data-act="close"]').forEach((b) => b.addEventListener('click', close));
       modal.addEventListener('click', (e) => { if (e.target === modal) close(); });
-      modal.querySelector('[data-act="use"]').addEventListener('click', () => {
-        DT().notify('已把章纲加入参考，写作时会出现在设定速览', 'success');
+      const goBtn = modal.querySelector('[data-act="go-outline"]');
+      if (goBtn) goBtn.addEventListener('click', () => { close(); DT().router.navigate('#/outline'); });
+      const useBtn = modal.querySelector('[data-act="use"]');
+      if (useBtn) useBtn.addEventListener('click', () => {
+        DT().notify('已把章纲加入参考，写作时可随时在左栏「本章章纲」面板查看', 'success');
         close();
       });
     }
@@ -482,6 +641,7 @@
       renderHeader();
       renderEditor();
       renderList(); // 高亮
+      renderOutlinePanel(); // 左栏章纲面板同步当前章节
       scanAndUpdateSidebar(true); // 全量扫描一次
     }
 
@@ -1037,6 +1197,14 @@
     shell.querySelector('[data-act="config"]').addEventListener('click', openConfigModal);
     shell.querySelector('[data-act="focus"]').addEventListener('click', toggleFocus);
     shell.querySelector('[data-act="save"]').addEventListener('click', () => flushSave());
+    // 左栏章纲面板：折叠/展开 + 查看完整章纲
+    outlinePanel.querySelector('[data-act="toggle-outline-panel"]').addEventListener('click', () => {
+      outlinePanel.classList.toggle('collapsed');
+    });
+    outlinePanel.querySelector('[data-act="expand-outline"]').addEventListener('click', () => {
+      if (state.currentCh) showOutlineModal(chKey(state.currentCh));
+      else DT().notify('请先选择一个章节', 'warning');
+    });
     shell.querySelector('[data-act="new-ch"]').addEventListener('click', newChapter);
     shell.querySelector('[data-act="refresh"]').addEventListener('click', () => reload());
     shell.querySelector('[data-act="format"]').addEventListener('click', runFormat);
@@ -1067,39 +1235,67 @@
 
     function openConfigModal() {
       const c = state.config;
+      const item = (key, label, desc) => `
+        <label class="ws-config-item">
+          <span class="ws-config-checkbox">
+            <input type="checkbox" data-k="${key}" ${c[key] ? 'checked' : ''} />
+            <span class="ws-config-checkbox-mark"></span>
+          </span>
+          <span class="ws-config-label">${label}${desc ? `<span class="ws-config-desc">${desc}</span>` : ''}</span>
+        </label>`;
       const overlay = document.createElement('div');
-      overlay.className = 'dt-modal-overlay';
+      overlay.className = 'ws-config-overlay';
       overlay.innerHTML = `
-        <div class="dt-modal">
-          <div class="dt-modal-header"><h3>⚙️ 视图配置</h3><button class="dt-modal-close" data-act="close">×</button></div>
-          <div class="dt-modal-body">
-            <div class="ws-config-list">
-              <label><input type="checkbox" data-k="showEncyclopedia" ${c.showEncyclopedia?'checked':''}> 显示「设定百科速览」面板（起点式 mini 百科）</label>
-              <label><input type="checkbox" data-k="showRoles" ${c.showRoles?'checked':''}> 显示「本章角色速览」面板</label>
-              <label><input type="checkbox" data-k="showSettings" ${c.showSettings?'checked':''}> 显示「本章设定速览」面板</label>
-              <label><input type="checkbox" data-k="showHooks" ${c.showHooks?'checked':''}> 显示「伏笔提醒」面板</label>
-              <label><input type="checkbox" data-k="showSearch" ${c.showSearch?'checked':''}> 显示「设定百科搜索」框</label>
-              <label><input type="checkbox" data-k="showWritingGoal" ${c.showWritingGoal?'checked':''}> 显示「写作目标/打卡」底部栏</label>
-              <label><input type="checkbox" data-k="showAIToolbar" ${c.showAIToolbar?'checked':''}> 显示「AI 浮动工具栏」</label>
-              <div class="ws-config-sep"></div>
-              <div class="ws-config-row"><label>每日写作目标字数</label>
-                <input type="number" min="100" step="500" value="${state.goal.daily||6000}" data-goal="daily" style="width:120px;" />
+        <div class="ws-config-modal">
+          <div class="ws-config-header">
+            <div class="ws-config-title">⚙️ 视图配置</div>
+            <button class="ws-config-close" data-act="close" aria-label="关闭">×</button>
+          </div>
+          <div class="ws-config-body">
+            <div class="ws-config-group">
+              <div class="ws-config-group-title">左栏 · 章节与章纲</div>
+              ${item('showOutlinePanel', '本章章纲面板', '章节列表下方展示当前章节的章纲内容')}
+            </div>
+            <div class="ws-config-group">
+              <div class="ws-config-group-title">右栏 · 写作速览</div>
+              ${item('showEncyclopedia', '设定百科速览', '写作时自动识别正文中的设定词条')}
+              ${item('showRoles', '本章角色速览', '自动识别文中出现的角色')}
+              ${item('showSettings', '本章设定速览', '自动识别提及的地点/功法/物品')}
+              ${item('showHooks', '伏笔提醒', '本章关联伏笔的埋设与回收状态')}
+              ${item('showSearch', '设定百科搜索', '右栏顶部搜索框，快速检索设定')}
+            </div>
+            <div class="ws-config-group">
+              <div class="ws-config-group-title">底栏与工具</div>
+              ${item('showWritingGoal', '写作目标 / 打卡底栏', '每日字数进度与连续写作打卡')}
+              ${item('showAIToolbar', 'AI 浮动工具栏', '章纲 / 查错 / 润色 / 续写 / 爽点悬浮按钮')}
+            </div>
+            <div class="ws-config-group">
+              <div class="ws-config-group-title">写作目标</div>
+              <div class="ws-config-row">
+                <span class="ws-config-label">每日写作目标字数</span>
+                <span class="ws-config-number">
+                  <input type="number" min="100" step="500" value="${state.goal.daily || 6000}" data-goal="daily" />
+                  <span class="ws-config-unit">字</span>
+                </span>
               </div>
             </div>
           </div>
-          <div class="dt-modal-footer">
-            <button class="dt-btn" data-act="reset">恢复默认</button>
-            <button class="dt-btn dt-btn-primary" data-act="save">保存</button>
+          <div class="ws-config-footer">
+            <button class="ws-config-reset" data-act="reset">恢复默认</button>
+            <button class="ws-config-save" data-act="save">保存配置</button>
           </div>
         </div>`;
-      document.body.appendChild(overlay);
+      // 挂到 shell 内以继承 --ws-* 主题变量
+      shell.appendChild(overlay);
       const close = () => overlay.remove();
-      overlay.querySelectorAll('[data-act="close"]').forEach((b) => b.addEventListener('click', close));
+      overlay.querySelector('[data-act="close"]').addEventListener('click', close);
       overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
       overlay.querySelector('[data-act="reset"]').addEventListener('click', () => {
         state.config = { ...DEFAULT_CONFIG };
         save(CONFIG_KEY, state.config);
-        applyConfig(); close();
+        applyConfig();
+        renderOutlinePanel();
+        close();
         DT().notify('已恢复默认视图配置', 'success');
       });
       overlay.querySelector('[data-act="save"]').addEventListener('click', () => {
@@ -1107,9 +1303,11 @@
           state.config[i.getAttribute('data-k')] = i.checked;
         });
         const gi = overlay.querySelector('[data-goal="daily"]');
-        if (gi) { const v = Number(gi.value) || 6000; state.goal.daily = v; save(GOAL_KEY, state.goal); updateGoalBar(state.currentCh ? (state.currentCh.words||0) : 0); }
+        if (gi) { const v = Number(gi.value) || 6000; state.goal.daily = v; save(GOAL_KEY, state.goal); updateGoalBar(state.currentCh ? (state.currentCh.words || 0) : 0); }
         save(CONFIG_KEY, state.config);
-        applyConfig(); close();
+        applyConfig();
+        renderOutlinePanel();
+        close();
         DT().notify('配置已保存', 'success');
       });
     }
